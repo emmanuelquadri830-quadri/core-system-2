@@ -36,19 +36,19 @@ export default function proof(ctx) {
   const pct2 = makeWord(group, '%', { size, weight: 500, color: 'var(--white)' });
   const kicker = el('div', 'layer', group, { text: pf.kicker.toUpperCase() });
   const label = el('div', 'layer', group, { text: pf.label });
-  const ks = L({ '16x9': 30, '1x1': 26, '9x16': 32 });
-  const ls = L({ '16x9': 64, '1x1': 52, '9x16': 60 });
-  Object.assign(kicker.style, { font: `500 ${ks}px var(--ui)`, letterSpacing: '0.16em', color: 'var(--accent)', whiteSpace: 'nowrap' });
+  const ks = L({ '16x9': 40, '1x1': 34, '9x16': 42 });
+  const ls = L({ '16x9': 84, '1x1': 68, '9x16': 80 });
+  Object.assign(kicker.style, { font: `500 ${ks}px var(--ui)`, letterSpacing: '0.16em', color: '#4C8EF0', whiteSpace: 'nowrap' });
   Object.assign(label.style, { font: `400 ${ls}px var(--ui)`, color: 'var(--white)', whiteSpace: 'nowrap' });
 
   // Measure the number so it can be laid out as one line (two in 9:16).
   const digitW = size * 0.62;
   const pctW = textWidth('%', { size, weight: 500 });
   const dashW = textWidth('–', { size, weight: 500 }) + size * 0.12;
-  const twoLines = AR === '9x16';
+  const twoLines = AR !== '16x9';
   const x0 = L({ '16x9': 130, '1x1': 70, '9x16': 80 });
   const lineW1 = digitW * 2 + pctW + (twoLines ? 0 : dashW);
-  const top = L({ '16x9': 300, '1x1': 300, '9x16': 560 });
+  const top = L({ '16x9': 300, '1x1': 250, '9x16': 560 });
 
   // The source card, a real crop.
   const cb = P.targets.cardBlue;
@@ -98,7 +98,7 @@ export default function proof(ctx) {
       place(pct1, { x, y: y - size * 0.02, show: true });
       x += pctW;
       if (twoLines) {
-        place(dash, { show: false });
+        place(dash, { x: x + size * 0.06, y: y - size * 0.02, show: true });
         place(b.node, { x: x0, y: y + size * 1.02, show: true });
         place(pct2, { x: x0 + digitW * 2, y: y + size * 1.0, show: true });
       } else {

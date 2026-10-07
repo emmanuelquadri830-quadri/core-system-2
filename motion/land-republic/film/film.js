@@ -41,7 +41,10 @@ if (manifest) {
   if (b.ui) rs.setProperty('--ui', b.ui);
 }
 
+const logoParts = manifest ? (await (await fetch(`../assets/${manifest.logo.parts}`)).json()).parts : [];
+
 export const ctx = {
+  logoParts,
   stage,
   W,
   H,
