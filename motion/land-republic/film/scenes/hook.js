@@ -50,10 +50,10 @@ export default function hook(ctx) {
 
   return {
     id: 'hook',
+    root,
+    from: 0,
+    to: T(8),
     update(t) {
-      const on = t < T(8);
-      root.style.visibility = on ? 'visible' : 'hidden';
-      if (!on) return;
 
       // Gap before the drop: an empty accent field, nothing else.
       if (t >= tEnd) {
@@ -63,8 +63,8 @@ export default function hook(ctx) {
         return;
       }
       root.style.background = 'var(--ink)';
-      group.style.visibility = 'visible';
-      wall.style.visibility = 'visible';
+      group.style.visibility = 'inherit';
+      wall.style.visibility = 'inherit';
 
       // Camera: a slow push out over the whole hook, a recoil when "hard." hits,
       // and on beat 7 the block is thrown up and out of frame.

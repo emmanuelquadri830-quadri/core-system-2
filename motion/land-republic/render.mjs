@@ -59,7 +59,7 @@ const subOffsets = Array.from({ length: BLUR }, (_, j) => (BLUR === 1 ? 0 : ((j 
 
 const { server, port } = await serve(ROOT);
 const browser = await chromium.launch({ args: ['--disable-gpu-vsync', '--font-render-hinting=none'] });
-const url = `http://127.0.0.1:${port}/film/index.html?ar=${AR}&render=1`;
+const url = `http://127.0.0.1:${port}/film/index.html?ar=${AR}&render=1${args.scenes ? `&scenes=${args.scenes}` : ''}`;
 
 async function worker(k, start, end) {
   const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });

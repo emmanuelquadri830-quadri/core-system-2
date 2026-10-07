@@ -72,8 +72,14 @@ for (const id of order) {
   }
 }
 
+// Scenes outside their window are not rendered at all, and a scene that is
+// on gets every property rewritten, so no frame depends on the one before.
 window.seek = (t) => {
-  for (const s of scenes) s.update(t);
+  for (const s of scenes) {
+    const on = t >= s.from && t < s.to;
+    s.root.style.display = on ? 'block' : 'none';
+    if (on) s.update(t);
+  }
 };
 window.filmInfo = { duration: DURATION, fps: FPS, width: W, height: H, ar: AR, scenes: scenes.map((s) => s.id) };
 window.ready = (async () => {

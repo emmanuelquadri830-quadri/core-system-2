@@ -100,3 +100,15 @@ export const cue = (tag) => {
   if (!c) throw new Error(`unknown cue ${tag}`);
   return c;
 };
+
+// Number roll for the proof beat: ticks that slow down as the number settles.
+// The film steps its digits on these times and audio/sfx.mjs puts one tick
+// sound on each, so the roll and the sound cannot disagree.
+export const COUNTER = { cue: 'count', ticks: 18, beats: 1.5 };
+export function counterTicks(startSec, period) {
+  const total = COUNTER.beats * period;
+  return Array.from({ length: COUNTER.ticks }, (_, k) => {
+    const x = k / (COUNTER.ticks - 1);
+    return { k, x, t: startSec + total * (1 - Math.pow(1 - x, 0.5)) };
+  });
+}

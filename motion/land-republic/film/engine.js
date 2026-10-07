@@ -123,7 +123,8 @@ export function svg(tag, parent, attrs = {}) {
 // Writes a full transform every frame. Nothing is left over from the frame
 // before because every property is always written.
 export function place(node, { x = 0, y = 0, s = 1, sx = 1, sy = 1, r = 0, o = 1, show = true, clip = null, z = null, blur = 0 } = {}) {
-  node.style.visibility = show ? 'visible' : 'hidden';
+  // 'inherit', never 'visible': a child must not show through a hidden parent.
+  node.style.visibility = show ? 'inherit' : 'hidden';
   node.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) rotate(${r.toFixed(3)}deg) scale(${(s * sx).toFixed(4)}, ${(s * sy).toFixed(4)})`;
   node.style.opacity = o.toFixed(3);
   node.style.clipPath = clip || 'none';

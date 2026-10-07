@@ -34,7 +34,7 @@ async function grab(ar, times, tag) {
   const [W, H] = SIZES[ar];
   const page = await browser.newPage({ viewport: { width: W, height: H } });
   page.on('pageerror', (e) => console.error('page error', e.message));
-  await page.goto(`http://127.0.0.1:${port}/film/index.html?ar=${ar}&render=1`);
+  await page.goto(`http://127.0.0.1:${port}/film/index.html?ar=${ar}&render=1${args.scenes ? `&scenes=${args.scenes}` : ''}`);
   await page.waitForFunction(() => window.ready, null, { timeout: 120000 });
   await page.evaluate(() => window.ready);
   const files = [];

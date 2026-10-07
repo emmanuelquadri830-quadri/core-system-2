@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SR, Bus, sec, db, readWav, writeWav, reverb, limit, lufs, truePeakDb, highpassBus } from './dsp.mjs';
 import * as I from './instruments.mjs';
-import { CUES, DURATION } from '../timeline.mjs';
+import { CUES, DURATION, counterTicks } from '../timeline.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
@@ -112,15 +112,10 @@ CUES.forEach((c, idx) => {
       wet = 0.1;
       break;
     case 'counter': {
-      // Odometer ticks that slow down as the number settles: 18 ticks over
-      // 1.5 beats with an ease-out spacing. The film rolls its digits on the
-      // same schedule (see film/counter.js).
-      const total = 1.5 * grid.period;
-      const ticks = 18;
-      sig = new Float32Array(sec(total + 0.05));
-      for (let k = 0; k < ticks; k++) {
-        const x = k / (ticks - 1);
-        const tt = total * (1 - Math.pow(1 - x, 0.5));
+      // One tick per digit step of the number roll (timeline.mjs counterTicks).
+      const ticks = counterTicks(0, grid.period);
+      sig = new Float32Array(sec(ticks[ticks.length - 1].t + 0.05));
+      for (const { k, x, t: tt } of ticks) {
         const tk = I.tickSnd({ hz: 5200 - 1400 * x, seed: seed + k });
         const o = sec(tt);
         for (let i = 0; i < tk.length && o + i < sig.length; i++) sig[o + i] += tk[i] * (0.5 + 0.5 * x);
