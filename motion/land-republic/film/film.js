@@ -61,7 +61,7 @@ export const ctx = {
   L: (o) => (AR in o ? o[AR] : o.default),
 };
 
-const order = (params.get('scenes') || 'hook,brand,discover,montage,trust,proof,next,lockup').split(',');
+const order = (params.get('scenes') || 'hook,site,montage,trust,proof,next,lockup').split(',');
 const scenes = [];
 for (const id of order) {
   try {

@@ -25,17 +25,17 @@ export const SECTIONS = [
 // The film reads the same list, so every click, slam and cut is drawn on the
 // frame where its sound starts.
 export const CUES = [
-  // Hook: words slam in on the beat, chatter on the gap, whoosh into the drop.
+  // Hook: words slam in on the beat, eight pins rain on beat 3, whoosh into the drop.
   { beat: 0,    kind: 'slam',    gain: 1.0,  tag: 'w-finding' },
   { beat: 1,    kind: 'slam',    gain: 0.8,  tag: 'w-theright' },
   { beat: 2,    kind: 'slam',    gain: 1.0,  tag: 'w-land' },
-  { beat: 3,    kind: 'chatter', gain: 0.6,  tag: 'chaos' },
+  { beat: 3,    kind: 'chatter', gain: 0.6,  tag: 'pins-rain' },
   { beat: 4,    kind: 'slam',    gain: 0.9,  tag: 'w-shouldnt' },
   { beat: 5,    kind: 'slam',    gain: 0.8,  tag: 'w-bethis' },
   { beat: 6,    kind: 'slamBig', gain: 1.0,  tag: 'w-hard' },
   { beat: 7,    kind: 'whooshIn', gain: 0.7, tag: 'to-drop' },
 
-  // Brand: drop, then real UI pieces lock into place one by one.
+  // Brand: drop, then real pieces of the Land Hackers page lock into place.
   { beat: 8,    kind: 'impact',  gain: 0.9,  tag: 'drop' },
   { beat: 8.5,  kind: 'pop',     gain: 0.55, tag: 'ui-1' },
   { beat: 9,    kind: 'pop',     gain: 0.55, tag: 'ui-2' },
@@ -43,41 +43,42 @@ export const CUES = [
   { beat: 10,   kind: 'pop',     gain: 0.6,  tag: 'ui-4' },
   { beat: 11,   kind: 'tick',    gain: 0.5,  tag: 'cursor-in' },
 
-  // Discovery: four real clicks, each on a beat.
+  // Discovery: four real clicks on the page, each on a backbeat.
   { beat: 12.75, kind: 'hover',  gain: 0.4,  tag: 'hover-1' },
-  { beat: 13,   kind: 'click',   gain: 0.9,  tag: 'click-browse' },
+  { beat: 13,   kind: 'click',   gain: 0.9,  tag: 'click-nav' },
   { beat: 13.5, kind: 'swipe',   gain: 0.5,  tag: 'scroll-1' },
   { beat: 14.75, kind: 'hover',  gain: 0.4,  tag: 'hover-2' },
-  { beat: 15,   kind: 'click',   gain: 0.9,  tag: 'click-location' },
-  { beat: 15.5, kind: 'confirm', gain: 0.5,  tag: 'location-set' },
+  { beat: 15,   kind: 'click',   gain: 0.9,  tag: 'click-learn' },
+  { beat: 15.5, kind: 'swipe',   gain: 0.5,  tag: 'scroll-2' },
   { beat: 16.75, kind: 'hover',  gain: 0.4,  tag: 'hover-3' },
-  { beat: 17,   kind: 'click',   gain: 0.9,  tag: 'click-filter' },
-  { beat: 17.5, kind: 'pop',     gain: 0.45, tag: 'results' },
+  { beat: 17,   kind: 'click',   gain: 0.9,  tag: 'click-verified' },
+  { beat: 17.5, kind: 'confirm', gain: 0.5,  tag: 'verified-lift' },
   { beat: 18.75, kind: 'hover',  gain: 0.4,  tag: 'hover-4' },
   { beat: 19,   kind: 'click',   gain: 0.9,  tag: 'click-open' },
   { beat: 19.5, kind: 'whoosh',  gain: 0.6,  tag: 'open-listing' },
 
-  // Montage: one cut per beat, a tag pop on each price.
+  // Montage: one cut per beat, a pop as each panel locks, the name on 23.5.
   { beat: 20,   kind: 'whoosh',  gain: 0.55, tag: 'cut-1' },
-  { beat: 20.5, kind: 'pop',     gain: 0.4,  tag: 'price-1' },
+  { beat: 20.5, kind: 'pop',     gain: 0.4,  tag: 'lock-1' },
   { beat: 21,   kind: 'whoosh',  gain: 0.55, tag: 'cut-2' },
-  { beat: 21.5, kind: 'pop',     gain: 0.4,  tag: 'price-2' },
+  { beat: 21.5, kind: 'pop',     gain: 0.4,  tag: 'lock-2' },
   { beat: 22,   kind: 'whoosh',  gain: 0.55, tag: 'cut-3' },
-  { beat: 22.5, kind: 'pop',     gain: 0.4,  tag: 'price-3' },
+  { beat: 22.5, kind: 'pop',     gain: 0.4,  tag: 'lock-3' },
   { beat: 23,   kind: 'whoosh',  gain: 0.55, tag: 'cut-4' },
-  { beat: 23.5, kind: 'pop',     gain: 0.4,  tag: 'price-4' },
+  { beat: 23.5, kind: 'pop',     gain: 0.45, tag: 'name' },
 
-  // Trust: three phrases on three beats, then pins and the boundary.
+  // Trust: three phrases on three beats; pin, boundary, building, verified card.
   { beat: 24,   kind: 'slam',    gain: 0.9,  tag: 'w-findit' },
+  { beat: 24.25, kind: 'pin',    gain: 0.6,  tag: 'pin-1' },
   { beat: 25,   kind: 'slam',    gain: 0.9,  tag: 'w-ownit' },
+  { beat: 25.25, kind: 'swipe',  gain: 0.45, tag: 'boundary' },
   { beat: 26,   kind: 'slamBig', gain: 0.9,  tag: 'w-buildonit' },
-  { beat: 26.5, kind: 'pin',     gain: 0.6,  tag: 'pin-1' },
-  { beat: 27,   kind: 'pin',     gain: 0.6,  tag: 'pin-2' },
-  { beat: 27.5, kind: 'stamp',   gain: 0.6,  tag: 'verified' },
+  { beat: 27,   kind: 'stamp',   gain: 0.6,  tag: 'verified' },
 
-  // Proof: the break. One heavy hit, then the counter.
+  // Proof: the break. One heavy hit, then the number rolls.
   { beat: 28,   kind: 'impact',  gain: 1.0,  tag: 'proof' },
   { beat: 28.25, kind: 'counter', gain: 0.45, tag: 'count' },
+  { beat: 29.5, kind: 'pop',     gain: 0.4,  tag: 'source-card' },
   { beat: 30,   kind: 'whooshIn', gain: 0.6, tag: 'to-next' },
 
   // Next: back in.
@@ -85,11 +86,13 @@ export const CUES = [
   { beat: 33,   kind: 'slam',    gain: 0.7,  tag: 'w-property' },
   { beat: 35,   kind: 'whooshIn', gain: 0.6, tag: 'to-logo' },
 
-  // Lockup.
+  // Lockup: the mark assembles, the tagline lands on the closing motif.
   { beat: 36,   kind: 'impact',  gain: 0.9,  tag: 'logo' },
   { beat: 36.5, kind: 'lock',    gain: 0.6,  tag: 'logo-lock' },
-  { beat: 37,   kind: 'tick',    gain: 0.4,  tag: 'tagline' },
-  { beat: 38,   kind: 'type',    gain: 0.35, tag: 'url' },
+  { beat: 37,   kind: 'tick',    gain: 0.35, tag: 't-discover' },
+  { beat: 37.5, kind: 'tick',    gain: 0.35, tag: 't-invest' },
+  { beat: 38,   kind: 'tick',    gain: 0.35, tag: 't-own' },
+  { beat: 38.5, kind: 'tick',    gain: 0.4,  tag: 'url' },
 ];
 
 export const sectionAt = (beat) =>

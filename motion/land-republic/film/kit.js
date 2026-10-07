@@ -200,16 +200,18 @@ export function makeBoundary(parent, W, H) {
   const s = svg('svg', parent, { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
   Object.assign(s.style, { position: 'absolute', left: '0px', top: '0px', overflow: 'visible' });
   const fill = svg('polygon', s, { fill: 'var(--accent)', 'fill-opacity': '0.22' });
-  const line = svg('polygon', s, { fill: 'none', stroke: 'var(--accent)', 'stroke-width': '5', 'stroke-linejoin': 'round' });
+  const line = svg('polygon', s, { fill: 'none', stroke: 'var(--white)', 'stroke-width': '7', 'stroke-linejoin': 'round' });
   const dots = [];
   return {
     svg: s,
-    update(t, t0, pts, { drawSpring = 'glide' } = {}) {
+    // clip: optional [x, y, w, h] the drawing must stay inside.
+    update(t, t0, pts, { drawSpring = 'glide', clip = null } = {}) {
       if (t < t0) {
         s.style.visibility = 'hidden';
         return;
       }
       s.style.visibility = 'inherit';
+      s.style.clipPath = clip ? `inset(${clip[1]}px ${W - clip[0] - clip[2]}px ${H - clip[1] - clip[3]}px ${clip[0]}px)` : 'none';
       const str = pts.map((p) => p.join(',')).join(' ');
       line.setAttribute('points', str);
       fill.setAttribute('points', str);
@@ -223,7 +225,7 @@ export function makeBoundary(parent, W, H) {
       line.setAttribute('stroke-dasharray', `${per}`);
       line.setAttribute('stroke-dashoffset', `${(per * (1 - p)).toFixed(2)}`);
       const f = clamp(spring(t - t0 - 0.28, 'soft'));
-      fill.setAttribute('fill-opacity', (0.24 * f).toFixed(3));
+      fill.setAttribute('fill-opacity', (0.32 * f).toFixed(3));
       while (dots.length < pts.length) {
         const d = svg('rect', s, { width: 14, height: 14, fill: 'var(--paper)', stroke: 'var(--accent)', 'stroke-width': 3 });
         dots.push(d);

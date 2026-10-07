@@ -20,7 +20,7 @@ const space = new Bus(N);
 
 // Pops and pins are tuned to the chord under them, so the interface sounds
 // play along with the track instead of on top of it.
-const POP_NOTES = { 'ui-1': 81, 'ui-2': 84, 'ui-3': 86, 'ui-4': 89, results: 84, 'price-1': 82, 'price-2': 86, 'price-3': 89, 'price-4': 94 };
+const POP_NOTES = { 'ui-1': 81, 'ui-2': 84, 'ui-3': 86, 'ui-4': 89, 'lock-1': 82, 'lock-2': 86, 'lock-3': 89, name: 94, 'source-card': 86 };
 const PIN_NOTES = { 'pin-1': 81, 'pin-2': 84 };
 
 const placed = [];
@@ -107,7 +107,8 @@ CUES.forEach((c, idx) => {
       wet = 0.15;
       break;
     case 'chatter':
-      sig = I.chatter({ seed }).map((v) => v * db(-10) * g);
+      // One pip per pin: eight 32nd notes across the beat (film/scenes/hook.js).
+      sig = I.chatter({ seed, count: 8, spacing: grid.period / 8 }).map((v) => v * db(-10) * g);
       pan = 0.2;
       wet = 0.1;
       break;

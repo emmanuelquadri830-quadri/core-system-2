@@ -48,7 +48,7 @@ async function grab(ar, times, tag) {
   return files;
 }
 
-const sectionOf = (t) => SECTIONS.find((s) => t >= T(s.from) && t < T(s.to)) || SECTIONS[SECTIONS.length - 1];
+const sectionOf = (t) => SECTIONS.find((s) => t >= T(s.from) && t < T(s.to)) || (t < T(0) ? SECTIONS[0] : SECTIONS[SECTIONS.length - 1]);
 
 let html;
 let name;
