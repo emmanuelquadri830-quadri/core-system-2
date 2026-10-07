@@ -1,0 +1,16 @@
+{
+  "name": "land-republic-film",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "20 second Land Republic motion film. Every frame is a pure function of time.",
+  "scripts": {
+    "capture": "node tools/capture.mjs",
+    "score": "node audio/score.mjs && node audio/measure.mjs && node audio/sfx.mjs",
+    "sheet": "node tools/contact.mjs",
+    "render": "node render.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.56.1"
+  }
+}
