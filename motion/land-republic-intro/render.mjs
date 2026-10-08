@@ -22,7 +22,7 @@ import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(ROOT, 'out');
-const FPS = 30, DURATION = 10.5, FRAMES = FPS * DURATION;   // frames 0..314, stops at 10.500 s
+const FPS = 30, DURATION = 11.5, FRAMES = FPS * DURATION;   // frames 0..344, stops at 11.500 s
 const WORKERS = 3;
 fs.mkdirSync(path.join(OUT, 'frames'), { recursive: true });
 
@@ -55,7 +55,12 @@ const pages = await Promise.all(Array.from({ length: WORKERS }, async () => {
 // Paint frame f on a freshly loaded document.
 async function paint(page, f) {
   await page.goto(URL_);
-  await page.waitForFunction(() => window.ready === true, null, { timeout: 60000 });
+  try {
+    await page.waitForFunction(() => window.ready === true, null, { timeout: 60000 });
+  } catch (e) {
+    console.error('page never became ready:\n' + [...new Set(errors)].join('\n'));
+    throw e;
+  }
   await page.evaluate(tt => window.seek(tt), f / FPS);
   return (await page.$('#frame')).screenshot({ type: 'png' });
 }

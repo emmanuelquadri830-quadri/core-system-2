@@ -4,7 +4,7 @@
 import { createGL } from './gl.js';
 
 const W = 1080, H = 1920, CX = 540, CY = 960;
-const DURATION = 10.5;
+const DURATION = 11.5;
 const NS = 'http://www.w3.org/2000/svg';
 
 // ------------------------------------------------------------------ helpers
@@ -125,10 +125,12 @@ function typeChars(spans, t, t0, step) {
 }
 
 const QUERY = 'land for sale in Ibadan';
-const LOOK = 'LOOKING FOR LAND';
-const LOOK_KEY = LOOK.indexOf('LAND');
-// word bursts, as the reference types: [first char, last char + 1, measured hit]
-const LOOK_BURSTS = [[0, 11], [12, 16]];
+const LOOK = 'LOOKING FOR A';
+// word bursts, as the reference types: [first char, last char + 1]
+const LOOK_BURSTS = [[0, 11], [12, 13]];
+// The reference's word wheel. HOUSE is typed into the slot, then the wheel rolls and settles on Land.
+const WHEEL = ['HOUSE', 'Apartment', 'Mansion', 'Land', 'Duplex'];
+const WHEEL_STOP = WHEEL.indexOf('Land');
 const TITLE = 'IBADAN, OYO STATE';
 const PINTXT = '7.38°N, 3.93°E';
 const qSpans = buildTyping($('query'), QUERY);
@@ -137,10 +139,25 @@ const tSpans = buildTyping($('titleText'), TITLE);
 const pSpans = buildTyping($('pinLabelText'), PINTXT);
 const QW = $('query').getComputedTextLength() / QUERY.length;
 const TW = $('titleText').getComputedTextLength() / TITLE.length;
-// Size the line to 80% of the frame width (the reference is smaller, but this is a phone).
-const LOOK_SIZE = 88 * 864 / $('lookText').getComputedTextLength();
+// Size the line so LOOKING FOR A plus the widest option fills about 92% of the frame.
+const wheelEls = WHEEL.map(w => {
+  const el = document.createElementNS(NS, 'text');
+  el.textContent = w;
+  el.setAttribute('font-size', 88);
+  $('wheel').appendChild(el);
+  return el;
+});
+const GAP_EM = 0.28;
+const LOOK_SIZE = 88 * 990 / ($('lookText').getComputedTextLength() + 88 * GAP_EM + Math.max(...wheelEls.map(e => e.getComputedTextLength())));
 $('lookText').setAttribute('font-size', LOOK_SIZE.toFixed(2));
+wheelEls.forEach(e => e.setAttribute('font-size', LOOK_SIZE.toFixed(2)));
 const LOOK_W = $('lookText').getComputedTextLength();
+const WORD_W = wheelEls.map(e => e.getComputedTextLength());
+const GAP = LOOK_SIZE * GAP_EM;
+const LAND_EL = wheelEls[WHEEL_STOP];
+const LAND_X = [0, 1, 2, 3, 4].map(k => (k ? LAND_EL.getSubStringLength(0, k) : 0));
+// Column centre chosen so the settled line, LOOKING FOR A Land, is centred on the frame.
+const COL_X = (W - (LOOK_W + GAP + WORD_W[WHEEL_STOP])) / 2 + LOOK_W + GAP + WORD_W[WHEEL_STOP] / 2;
 const lookPrefix = k => (k <= 0 ? 0 : $('lookText').getSubStringLength(0, k));
 const LOOK_X = [...Array(LOOK.length + 1).keys()].map(lookPrefix);
 const PW = $('pinLabelText').getComputedTextLength() / PINTXT.length;
@@ -270,11 +287,11 @@ const C0 = T.click + 0.02;
 // Camera path: the reference's fly-in (globe, region, horizon tilt, descent, title, oblique, neon),
 // compressed from 13 s to about 6 s and aimed at Ibadan.
 const camLogRange = monotone([[C0, Math.log(46000)], [T.regional, Math.log(2400)], [T.regional + 0.3, Math.log(1250)],
-  [6.55, Math.log(600)], [6.95, Math.log(200)], [7.95, Math.log(95)], [8.9, Math.log(46)], [DURATION, Math.log(38)]]);
-const camLon = monotone([[C0, -14], [T.regional, 3.4], [T.regional + 0.3, 3.85], [6.55, 3.93], [6.95, IBADAN[0]], [7.95, 3.94], [8.9, 3.962], [DURATION, 3.97]]);
-const camLat = monotone([[C0, 4.0], [T.regional, 8.3], [T.regional + 0.3, 7.95], [6.55, 7.5], [6.95, IBADAN[1]], [7.95, 7.385], [8.9, 7.402], [DURATION, 7.408]]);
-const camPitch = monotone([[C0, 0], [6.0, 0], [6.22, 66], [6.38, 66], [6.6, 0], [7.95, 0], [8.85, 50], [DURATION, 54]]);
-const camHeading = monotone([[C0, 0], [7.95, 0], [8.85, 33], [DURATION, 37]]);
+  [T.horizon + 0.3, Math.log(600)], [T.title - 0.05, Math.log(200)], [T.oblique - 0.05, Math.log(95)], [T.neon - 0.1, Math.log(46)], [DURATION, Math.log(38)]]);
+const camLon = monotone([[C0, -14], [T.regional, 3.4], [T.regional + 0.3, 3.85], [T.horizon + 0.3, 3.93], [T.title - 0.05, IBADAN[0]], [T.oblique - 0.05, 3.94], [T.neon - 0.1, 3.962], [DURATION, 3.97]]);
+const camLat = monotone([[C0, 4.0], [T.regional, 8.3], [T.regional + 0.3, 7.95], [T.horizon + 0.3, 7.5], [T.title - 0.05, IBADAN[1]], [T.oblique - 0.05, 7.385], [T.neon - 0.1, 7.402], [DURATION, 7.408]]);
+const camPitch = monotone([[C0, 0], [T.horizon - 0.25, 0], [T.horizon - 0.03, 66], [T.horizon + 0.13, 66], [T.horizon + 0.35, 0], [T.oblique - 0.05, 0], [T.neon - 0.15, 50], [DURATION, 54]]);
+const camHeading = monotone([[C0, 0], [T.oblique - 0.05, 0], [T.neon - 0.15, 33], [DURATION, 37]]);
 
 const v3 = {
   add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
@@ -360,9 +377,9 @@ const baseRoadEls = VEC.roads.map(r => {
 });
 // Labels sit on the visible stretch of each road, measured in screen pixels from the junction.
 const LABELS = [
-  { text: 'TOWARDS LAGOS', route: ROUTE_LAGOS, s0: 90, s1: 560, t0: 9.5, dy: -34 },
-  { text: 'TOWARDS IFE', route: ROUTE_IFE, s0: 150, s1: 520, t0: 9.68, dy: -34 },
-  { text: 'TOWARDS OYO', route: ROUTE_OYO, s0: 240, s1: 640, t0: 9.84, dy: 0 },
+  { text: 'TOWARDS LAGOS', route: ROUTE_LAGOS, s0: 90, s1: 560, t0: T.neon + 0.5, dy: -34 },
+  { text: 'TOWARDS IFE', route: ROUTE_IFE, s0: 150, s1: 520, t0: T.neon + 0.68, dy: -34 },
+  { text: 'TOWARDS OYO', route: ROUTE_OYO, s0: 240, s1: 640, t0: T.neon + 0.84, dy: 0 },
 ];
 LABELS.forEach((L, i) => {
   const path = document.createElementNS(NS, 'path');
@@ -431,12 +448,12 @@ function labelPath(c, pts, s0, s1, rev = null) {
 function worldOverlay(t, c) {
   // City title: a soft gradient sweeps the letters on, then off, as in the reference.
   const sIn = lerp(-1.5, TITLE_CITY.length + 0.5, E.inOutSine(prog(t, T.title - 0.07, T.title + 0.33)));
-  const sOut = lerp(-1.5, TITLE_CITY.length + 0.5, E.inOutSine(prog(t, 7.6, 7.94)));
+  const sOut = lerp(-1.5, TITLE_CITY.length + 0.5, E.inOutSine(prog(t, T.title + 0.6, T.title + 0.94)));
   citySpans.forEach((sp, i) => {
     const a = clamp((sIn - i) / 1.5) * (1 - clamp((sOut - i) / 1.5));
     sp.setAttribute('fill-opacity', a.toFixed(3));
   });
-  show($('cityTitle'), t > T.title - 0.1 && t < 7.96);
+  show($('cityTitle'), t > T.title - 0.1 && t < T.title + 0.96);
 
   // Base road network fades up as the city comes close.
   const roadsOn = E.inOutSine(prog(t, T.neon - 0.1, T.neon + 0.3));
@@ -467,7 +484,7 @@ function worldOverlay(t, c) {
   });
 
   // Junction ring with its curved label.
-  const rU = E.inOutCubic(prog(t, 9.62, 9.98));
+  const rU = E.inOutCubic(prog(t, T.neon + 0.62, T.neon + 0.98));
   show($('ring'), rU > 0);
   if (rU > 0) {
     const ring = [], arc = [];
@@ -486,7 +503,7 @@ function worldOverlay(t, c) {
     const top = arc.filter(p => p[1] <= Math.min(...arc.map(q => q[1])) + (Math.max(...arc.map(q => q[1])) - Math.min(...arc.map(q => q[1]))) * 0.5)
       .sort((a, b) => a[0] - b[0]);
     set($('ringArc'), { d: toD(top) });
-    set($('ringLabel'), { 'fill-opacity': clamp((t - 9.86) / 0.1).toFixed(3) });
+    set($('ringLabel'), { 'fill-opacity': clamp((t - (T.neon + 0.86)) / 0.1).toFixed(3) });
   }
 }
 
@@ -569,11 +586,19 @@ function seek(t) {
   set($('threadShadow2'), { d: threadPath(thY + 18, thPh + 2.4, 42, 16) });
   set($('threadLight'), { d: threadPath(thY, thPh) });
 
-  // LOOKING FOR | LAND arrive as word bursts on the measured grid, the line drifting left.
-  const burstT = [T.flood + 0.25, T.flood + 0.5];
-  const lookDrift = -120 * Math.max(0, t - burstT[0]);
-  const lx = CX - LOOK_W / 2 + 40 + lookDrift;
-  const ly = 1010;
+  // LOOKING FOR A arrives in word bursts, HOUSE is typed into the slot, the whole line is
+  // selected back to the start, then the word wheel rolls and settles on Land (as in the reference).
+  const burstT = [T.flood + 0.25, T.flood + 0.4];
+  const houseT = T.flood + 0.5;
+  const ly = 1010, S_ = LOOK_SIZE, capC = ly - 0.35 * S_;
+  // Wheel position in items: 0 = HOUSE in the slot, 3 = Land. Timed so Land crosses the slot on the hit.
+  const W0 = T.wheel - 0.423;
+  const wp = WHEEL_STOP * settle(prog(t, W0, W0 + 0.7), 0.03, 0.75, E.inOutCubic);
+  const i0 = clamp(Math.floor(wp), 0, WHEEL.length - 1), i1 = Math.min(WHEEL.length - 1, i0 + 1);
+  const slotW = lerp(WORD_W[i0], WORD_W[i1], wp - Math.floor(wp));
+  const wheelDrift = -50 * Math.max(0, t - burstT[0]);
+  const colX = COL_X + wheelDrift;
+  const lx = colX - slotW / 2 - GAP - LOOK_W;      // the line closes up to whatever word is in the slot
   set($('lookText'), { x: lx.toFixed(1), y: ly });
   let ln = 0;
   LOOK_BURSTS.forEach(([c0, c1], b) => {
@@ -584,25 +609,62 @@ function seek(t) {
       if (t >= tk) ln = Math.max(ln, k + 1);
     }
   });
-  if (ln >= 11 && LOOK[11] === ' ' && t >= burstT[0]) lSpans[11].setAttribute('fill-opacity', 1);
+  if (t >= burstT[0]) lSpans[11].setAttribute('fill-opacity', 1);
 
-  // Selection steps back over LAND one letter at a time, like shift + left arrow.
-  const SEL0 = T.highlight - 0.06, STEP = 0.04;
-  const nSel = t < SEL0 ? 0 : Math.min(4, 1 + Math.floor((t - SEL0) / STEP));
-  const selR = lx + LOOK_X[LOOK_KEY + 4], selL = lx + LOOK_X[LOOK_KEY + 4 - nSel];
-  const capTop = ly - LOOK_SIZE * 0.78, selH = LOOK_SIZE * 1.02;
-  set($('lookSel'), { x: selL.toFixed(1), y: capTop.toFixed(1), width: (selR - selL).toFixed(1), height: selH.toFixed(1) });
-  const doneT = burstT[1] + 0.03;
+  // The drum: items above and below the slot shrink, squash and fade with distance.
+  WHEEL.forEach((word, k) => {
+    const d = k - wp, th = clamp(d * 0.5, -1.45, 1.45);
+    let yc = capC + 2.5 * S_ * Math.sin(th);
+    const sc = 0.6 + 0.4 * Math.cos(th), sy = 0.82 + 0.18 * Math.cos(th);
+    let op = clamp(Math.cos(th) * 1.25 - 0.25);
+    if (k === 0) op *= prog(t, houseT, houseT + 0.06) * (0.3 + 0.7 * prog(t, houseT, houseT + 0.06));
+    else {
+      // the options unfurl from the slot once the line has been selected
+      const u = E.outCubic(prog(t, W0 - 0.2 + 0.05 * (k - 1), W0 + 0.02 + 0.05 * (k - 1)));
+      yc = lerp(capC + 0.6 * S_, yc, u);
+      op *= u;
+    }
+    set(wheelEls[k], {
+      transform: `translate(${colX.toFixed(1)} ${yc.toFixed(1)}) scale(${sc.toFixed(4)} ${(sc * sy).toFixed(4)}) translate(0 ${(0.35 * S_).toFixed(2)})`,
+      'fill-opacity': op.toFixed(3),
+      fill: mixHex('#2C281E', '#8E8980', clamp(Math.abs(d) / 2)),
+    });
+  });
+
+  // Selection: first it steps back over the whole line, then it lifts as the wheel unfurls;
+  // after the wheel settles it steps back over Land on the measured hit.
+  const capTop = ly - S_ * 0.78, selH = S_ * 1.02;
+  const wordStarts = [lx + LOOK_X[12], lx + LOOK_X[8], lx];          // A, FOR, LOOKING
+  const SW0 = houseT + 0.14;
+  const nWords = t < SW0 ? 0 : Math.min(4, 1 + Math.floor((t - SW0) / 0.06));
+  let selL = 0, selR = 0, selOp = 0;
+  if (t < W0 - 0.05) {
+    selR = colX + WORD_W[0] / 2;
+    selL = nWords === 0 ? selR : nWords === 1 ? colX - WORD_W[0] / 2 : wordStarts[nWords - 2];
+    selOp = 1 - E.inOutSine(prog(t, W0 - 0.24, W0 - 0.08));
+  } else {
+    const SEL0 = T.highlight - 0.06, STEP = 0.04;
+    const nSel = t < SEL0 ? 0 : Math.min(4, 1 + Math.floor((t - SEL0) / STEP));
+    const landL = colX - WORD_W[WHEEL_STOP] / 2;
+    selR = landL + LAND_X[4];
+    selL = landL + LAND_X[4 - nSel];
+    selOp = 1;
+  }
+  const selW = selR - selL > 0.5 ? selR - selL + 8 : 0;     // nothing selected: no box at all
+  set($('lookSel'), { x: (selL - 4).toFixed(1), y: capTop.toFixed(1), width: selW.toFixed(1), height: selH.toFixed(1), 'fill-opacity': selOp.toFixed(3) });
+  // Caret: follows the typing, then sits after HOUSE until the selection starts.
+  const caretX = t < houseT ? lx + LOOK_X[ln] + 6 : colX + WORD_W[0] / 2 + 6;
+  const doneT = houseT + 0.03;
   const blinkOn = t < doneT || Math.floor((t - doneT) * 3.2) % 2 === 0;
-  set($('lookCaret'), { x: (lx + LOOK_X[ln] + 6).toFixed(1), y: (ly - LOOK_SIZE * 0.84).toFixed(1), height: (LOOK_SIZE * 1.04).toFixed(1),
-    opacity: t >= burstT[0] - 0.12 && nSel === 0 && blinkOn ? 1 : 0 });
+  set($('lookCaret'), { x: caretX.toFixed(1), y: (ly - S_ * 0.84).toFixed(1), height: (S_ * 1.04).toFixed(1),
+    opacity: t >= burstT[0] - 0.12 && t < SW0 && blinkOn ? 1 : 0 });
 
   // ---------------- Scene B: search pill drops in over the sky (2.84-4.95)
   show($('sceneB'), t >= T.whip - 0.1 && t < T.click + 0.2);
   const pillU = settleHit(t, T.whip - 0.02, T.pill_land, 0.024, 0.6);
-  const pillDrift = 26 * E.inOutSine(prog(t, T.pill_land + 0.2, 4.0));
+  const pillDrift = 26 * E.inOutSine(prog(t, T.pill_land + 0.2, T.click - 0.5));
   const py = lerp(-220, PILL.y, pillU) + pillDrift;
-  const colU = E.inOutCubic(prog(t, 4.02, 4.20));
+  const colU = E.inOutCubic(prog(t, T.click - 0.48, T.click - 0.30));
   const btnX0 = PILL.x + PILL.w + 24 + BTN_R;
   const pillL = lerp(PILL.x, btnX0 - BTN_R, colU);
   const pillWd = lerp(PILL.w, BTN_R * 2, colU);
@@ -621,7 +683,7 @@ function seek(t) {
   // Button: drops with the pill (a beat of follow-through), then takes the stage.
   const btnDropU = settleHit(t, T.whip + 0.01, T.pill_land + 0.03, 0.03, 0.6);
   const by0 = lerp(-220, PILL.y, btnDropU) + pillDrift;
-  const travU = E.inOutCubic(prog(t, 4.10, 4.38));
+  const travU = E.inOutCubic(prog(t, T.click - 0.40, T.click - 0.12));
   let bx = lerp(btnX0, CX, travU), by = lerp(by0, 1010, travU);
   let br = lerp(BTN_R, 96, travU);
   const press = 1 - 0.14 * E.inQuad(prog(t, T.click - 0.08, T.click));
@@ -629,25 +691,25 @@ function seek(t) {
   const bk = t < T.click ? press : lerp(0.86, 1, release);
   br *= bk * (1 - E.inCubic(prog(t, T.click + 0.03, T.click + 0.17)));
   set($('btnCircle'), { cx: bx.toFixed(1), cy: by.toFixed(1), r: br.toFixed(2) });
-  const arrowK = 1 - E.inOutCubic(prog(t, 4.06, 4.16));
+  const arrowK = 1 - E.inOutCubic(prog(t, T.click - 0.44, T.click - 0.34));
   set($('btnArrow'), { transform: `translate(${bx.toFixed(1)} ${by.toFixed(1)}) scale(${(arrowK * br / BTN_R).toFixed(3)})`, opacity: arrowK > 0.01 ? 1 : 0 });
 
   // Second mark: the pill's icon, then it rides the collapse and becomes the button's face.
   const iconTarget = [PILL.x + 72, py];
   let hub = iconTarget, S = 1.75;
-  if (t >= 4.02) {
+  if (t >= T.click - 0.48) {
     hub = [lerp(iconTarget[0], btnX0, colU), py];
     S = lerp(1.75, 1.9, colU);
-    if (t >= 4.10) { hub = [bx, by]; S = lerp(1.9, 3.1, travU) * bk * (1 - E.inCubic(prog(t, T.click + 0.04, T.click + 0.22))); }
+    if (t >= T.click - 0.40) { hub = [bx, by]; S = lerp(1.9, 3.1, travU) * bk * (1 - E.inCubic(prog(t, T.click + 0.04, T.click + 0.22))); }
   }
-  const markWhite = E.inOutCubic(prog(t, 4.12, 4.24));
+  const markWhite = E.inOutCubic(prog(t, T.click - 0.38, T.click - 0.26));
   set($('markArms'), { fill: mixHex('#0F68D8', '#FFFFFF', markWhite) });
   set($('mark'), { transform: `translate(${hub[0].toFixed(2)} ${hub[1].toFixed(2)}) scale(${S.toFixed(4)}) translate(${-HUB[0]} ${-HUB[1]})` });
   show($('mark'), t < T.click + 0.23);
 
   // Cursor glides in, presses on the measured click, then leaves.
-  show($('cursor'), t >= 4.04 && t < T.click + 0.31);
-  const cu = E.outCubic(prog(t, 4.04, T.click - 0.07));
+  show($('cursor'), t >= T.click - 0.46 && t < T.click + 0.31);
+  const cu = E.outCubic(prog(t, T.click - 0.46, T.click - 0.07));
   const p0 = [1130, 1720], p1 = [930, 1200], p2 = [CX + 14, 1010 + 18];
   const cxp = (1 - cu) * (1 - cu) * p0[0] + 2 * (1 - cu) * cu * p1[0] + cu * cu * p2[0];
   const cyp = (1 - cu) * (1 - cu) * p0[1] + 2 * (1 - cu) * cu * p1[1] + cu * cu * p2[1];

@@ -1,15 +1,15 @@
-# Land Republic intro, 0:00 to 0:10.5
+# Land Republic intro, 0:00 to 0:11.5
 
-A 1080×1920 (9:16) 30 fps intro for Instagram and TikTok. It runs logo, then the "LOOKING FOR" beat, then the search, then a Google Earth style fly-in from the globe to Ibadan. It stops at 10.500 s.
+A 1080×1920 (9:16) 30 fps intro for Instagram and TikTok. It runs logo, then the "LOOKING FOR" beat, then the search, then a Google Earth style fly-in from the globe to Ibadan. It stops at 11.500 s.
 
 ## Sequence (hits measured from the score)
 
 | Time | Beat |
 |---|---|
 | 0.00–2.00 | The mark assembles (settles on 0.50), the wordmark slides in (1.00), and brand blue floods out of the mark (2.00) |
-| 2.00–3.00 | The reference's "LOOKING FOR" beat: the field cools to slate and warm charcoal, a soft light hump rises, "LOOKING FOR" and "LAND" type in as word bursts (2.25, 2.50) over a soft wavy thread, and the selection steps back over LAND (2.75) |
-| 3.00–4.50 | Whip into the sky (3.00), the search pill lands (3.25), "land for sale in Ibadan" types, the pill collapses into the button, and the click lands on 4.50 |
-| 4.50–10.50 | The world transition from the second reference (its 0:00–0:13, compressed to about 6 s). The button opens onto space and the globe, which turns from the Atlantic to West Africa. The camera drops into a top-down view over Nigeria (5.75), tilts up to the curved horizon over the Gulf of Guinea (6.25) and descends onto Ibadan. "IBADAN" sweeps on (7.00) and off, then the camera tilts over the city (8.00). The ground dims, and the Lagos-Ibadan Expressway (9.00) and the road toward Ife (9.25) light up, with labels and a junction ring (10.00) |
+| 2.00–4.00 | The reference's "LOOKING FOR" beat with its word wheel. The field cools to slate and warm charcoal, and a soft light hump rises. "LOOKING FOR" and "A" type in as word bursts (2.25, 2.40) over a soft wavy thread. HOUSE is typed into the slot (2.50), and the selection steps back across the whole line (2.75). The options unfurl, the wheel rolls through Apartment and Mansion with a detent tick per word, and it settles on Land (3.50). Land is then selected (3.75) |
+| 4.00–5.50 | Whip into the sky (4.00), the search pill lands (4.25), "land for sale in Ibadan" types, the pill collapses into the button, and the click lands on 5.50 |
+| 5.50–11.50 | The world transition from the second reference (its 0:00–0:13, compressed to about 6 s). The button opens onto space and the globe, which turns from the Atlantic to West Africa. The camera drops into a top-down view over Nigeria (6.75), tilts up to the curved horizon over the Gulf of Guinea (7.25) and descends onto Ibadan. "IBADAN" sweeps on (8.00) and off, then the camera tilts over the city (9.00). The ground dims, and the Lagos-Ibadan Expressway (10.00) and the road toward Ife (10.25) light up, with labels and a junction ring (11.00) |
 
 The earlier map, plot and Ariya Springs card section is still in `src/film.js`, parked beyond the end of the film, so it can come back in a later step.
 

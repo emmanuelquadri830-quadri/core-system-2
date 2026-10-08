@@ -1,4 +1,4 @@
-"""Land Republic intro (0:00-0:10.5) score and SFX, synthesized from scratch.
+"""Land Republic intro (0:00-0:11.5) score and SFX, synthesized from scratch.
 
 Writes audio/score.wav (48 kHz, 24-bit stereo, -14 LUFS integrated) and
 beats.json (onsets measured back out of the rendered mix, not the cue list).
@@ -15,7 +15,7 @@ import soundfile as sf
 from scipy.signal import butter, fftconvolve, sosfilt
 
 SR = 48000
-DUR = 10.5
+DUR = 11.5
 BPM = 120.0
 BEAT = 60.0 / BPM
 N = int(SR * DUR)
@@ -171,6 +171,15 @@ def shimmer(dur, seed, base=1760):
     return out * np.exp(-t / (dur * 0.35)) * np.clip(t / 0.02, 0, 1)
 
 
+def detent(seed):
+    """Picker-wheel detent: a short woody click with a little body."""
+    n = int(0.06 * SR)
+    t = np.arange(n) / SR
+    body = np.sin(2 * math.pi * (900 + 600 * np.exp(-t / 0.004)) * t) * np.exp(-t / 0.012)
+    click = bp(noise(n, seed), 1800, 6000) * np.exp(-t / 0.002)
+    return body * 0.5 + click
+
+
 def whoosh(dur, seed, lo=250, hi=5200, peak=0.6):
     """Band of noise swept up then down; loudest at `peak` (0..1 of dur)."""
     n = int(dur * SR)
@@ -219,17 +228,19 @@ HITS = [
     (0.50, "mark_settle"),
     (1.00, "wordmark"),
     (2.00, "flood"),       # brand blue floods out of the mark
-    (2.75, "highlight"),   # LAND is selected
-    (3.00, "whip"),        # paper whips up into the sky
-    (3.25, "pill_land"),
-    (4.50, "click"),       # the search opens onto space
-    (5.75, "regional"),    # globe gives way to West Africa
-    (6.25, "horizon"),     # tilt up to the horizon
-    (7.00, "title"),       # IBADAN
-    (8.00, "oblique"),     # tilt over the city
-    (9.00, "neon"),        # Lagos-Ibadan Expressway lights up
-    (9.25, "neon2"),       # road toward Ife lights up
-    (10.00, "final"),
+    (2.75, "sweep"),       # the line is selected back to the start
+    (3.50, "wheel"),       # the word wheel lands on Land
+    (3.75, "highlight"),   # Land is selected
+    (4.00, "whip"),        # paper whips up into the sky
+    (4.25, "pill_land"),
+    (5.50, "click"),       # the search opens onto space
+    (6.75, "regional"),    # globe gives way to West Africa
+    (7.25, "horizon"),     # tilt up to the horizon
+    (8.00, "title"),       # IBADAN
+    (9.00, "oblique"),     # tilt over the city
+    (10.00, "neon"),       # Lagos-Ibadan Expressway lights up
+    (10.25, "neon2"),      # road toward Ife lights up
+    (11.00, "final"),
 ]
 
 CHORDS = [  # (start, dur, bass midi, pad midis)
@@ -237,7 +248,8 @@ CHORDS = [  # (start, dur, bass midi, pad midis)
     (2.0, 2.0, 35, [59, 62, 66, 69, 73]),   # Bm9
     (4.0, 2.0, 31, [55, 59, 62, 66, 69]),   # Gmaj9
     (6.0, 2.0, 40, [64, 67, 71, 74, 78]),   # Em9
-    (8.0, 2.5, 38, [62, 66, 69, 73, 76]),   # Dmaj9, resolves under the neon
+    (8.0, 2.0, 31, [55, 59, 62, 66, 69]),   # Gmaj9 under the title
+    (10.0, 1.5, 38, [62, 66, 69, 73, 76]),  # Dmaj9, resolves under the neon
 ]
 
 
@@ -268,8 +280,8 @@ def build():
               pan=(rnd() - 0.5) * 0.8)
 
     # Kicks: light on the downbeats once the story starts.
-    for tt in (4.0, 6.0, 7.0, 8.0, 9.0, 10.0):
-        place(hits, kick(seed=int(tt * 10)), tt, 0.5 if tt in (7.0, 10.0) else 0.36)
+    for tt in (6.0, 7.0, 8.0, 9.0, 10.0, 11.0):
+        place(hits, kick(seed=int(tt * 10)), tt, 0.5 if tt in (8.0, 11.0) else 0.36)
 
     # Hits.
     place(hits, thock(), 0.50, 0.7)
@@ -277,23 +289,27 @@ def build():
         place(hits, mallet(midi(m + 12), decay=0.9), 0.50 + k * 0.012, 0.11, pan=-0.3 + k * 0.2)
     place(hits, mallet(midi(81), decay=0.6), 1.00, 0.12, pan=0.25)
     place(hits, kick(f0=80, f1=38, decay=0.45, click=0.1, seed=12), 2.00, 0.5)      # flood
-    place(hits, mallet(midi(86), decay=0.35, ratio=5.0, index=1.0), 2.75, 0.1, pan=0.3)   # LAND
-    place(hits, mallet(midi(78), decay=0.5), 2.75, 0.06, pan=-0.2)
-    place(hits, kick(f0=95, f1=42, click=0.15, seed=14), 3.00, 0.42)                # whip
-    place(hits, pop(), 3.25, 0.22)
-    place(hits, ui_click(), 4.50, 0.5)
-    place(hits, kick(f0=85, f1=36, decay=0.5, click=0.08, seed=15), 5.75, 0.42)     # West Africa
-    place(hits, mallet(midi(74), decay=0.8), 5.75, 0.07, pan=-0.2)
-    place(hits, mallet(midi(88), decay=0.6, ratio=5.0, index=1.0), 6.25, 0.07, pan=0.3)  # horizon
-    place(hits, mallet(midi(81), decay=0.9), 6.25, 0.06, pan=-0.3)
-    place(hits, kick(f0=70, f1=30, decay=0.8, click=0.12, seed=16), 7.00, 0.62)     # IBADAN
-    for k, m in enumerate((64, 71, 74, 78, 83)):
-        place(hits, mallet(midi(m + 12), decay=1.2), 7.00 + k * 0.012, 0.09, pan=-0.4 + k * 0.2)
-    place(hits, mallet(midi(76), decay=0.7), 8.00, 0.09, pan=0.2)                   # tilt over the city
-    place(hits, zap(320, 1400, 0.5, 17), 9.00, 0.24, pan=-0.25)                      # neon one
-    place(hits, zap(420, 1900, 0.45, 18), 9.25, 0.2, pan=0.3)                        # neon two
+    place(hits, mallet(midi(78), decay=0.4, ratio=5.0, index=1.0), 2.75, 0.07, pan=-0.2)  # line selected
+    place(hits, thock(seed=19), 3.50, 0.42)                                         # wheel lands on Land
+    for k, m in enumerate((71, 74, 78)):
+        place(hits, mallet(midi(m + 12), decay=0.8), 3.50 + k * 0.01, 0.07, pan=-0.2 + k * 0.2)
+    place(hits, mallet(midi(86), decay=0.35, ratio=5.0, index=1.0), 3.75, 0.1, pan=0.3)   # Land selected
+    place(hits, mallet(midi(78), decay=0.5), 3.75, 0.06, pan=-0.2)
+    place(hits, kick(f0=95, f1=42, click=0.15, seed=14), 4.00, 0.42)                # whip
+    place(hits, pop(), 4.25, 0.22)
+    place(hits, ui_click(), 5.50, 0.5)
+    place(hits, kick(f0=85, f1=36, decay=0.5, click=0.08, seed=15), 6.75, 0.42)     # West Africa
+    place(hits, mallet(midi(74), decay=0.8), 6.75, 0.07, pan=-0.2)
+    place(hits, mallet(midi(88), decay=0.6, ratio=5.0, index=1.0), 7.25, 0.07, pan=0.3)  # horizon
+    place(hits, mallet(midi(81), decay=0.9), 7.25, 0.06, pan=-0.3)
+    place(hits, kick(f0=70, f1=30, decay=0.8, click=0.12, seed=16), 8.00, 0.62)     # IBADAN
+    for k, m in enumerate((67, 71, 74, 78, 83)):
+        place(hits, mallet(midi(m + 12), decay=1.2), 8.00 + k * 0.012, 0.09, pan=-0.4 + k * 0.2)
+    place(hits, mallet(midi(76), decay=0.7), 9.00, 0.09, pan=0.2)                   # tilt over the city
+    place(hits, zap(320, 1400, 0.5, 17), 10.00, 0.24, pan=-0.25)                     # neon one
+    place(hits, zap(420, 1900, 0.45, 18), 10.25, 0.2, pan=0.3)                       # neon two
     for k, m in enumerate((62, 69, 73, 78, 81)):
-        place(hits, mallet(midi(m + 12), decay=1.4), 10.00 + k * 0.015, 0.09, pan=-0.4 + k * 0.2)
+        place(hits, mallet(midi(m + 12), decay=1.4), 11.00 + k * 0.015, 0.09, pan=-0.4 + k * 0.2)
 
     # SFX layer (texture, not on the grid by design: typing, sweeps).
     rnd = mulberry32(55)
@@ -303,29 +319,35 @@ def build():
     place(sfx, whoosh(0.6, 36, lo=200, hi=3000, peak=0.55), 2.06, 0.22) # light wave
     for k in range(4):                                                  # LOOKING FOR (word burst)
         place(sfx, tick(700 + k, 1.0), 2.25 + k * 0.018, 0.2, pan=-0.1)
-    for k in range(3):                                                  # LAND (word burst)
-        place(sfx, tick(720 + k, 1.0), 2.50 + k * 0.018, 0.2, pan=-0.1)
-    for k in range(4):                                                  # selection steps back over LAND
-        place(sfx, tick(740 + k, 0.6), 2.69 + k * 0.04, 0.1, pan=0.2)
-    place(sfx, riser(0.45, 37, 300, 2400), 2.55, 0.1)                   # into the whip
-    place(sfx, whoosh(0.4, 33, peak=0.45), 2.82, 0.4)                   # whip to the sky
+    place(sfx, tick(710, 1.0), 2.40, 0.2, pan=-0.1)                     # A
+    for k in range(3):                                                  # HOUSE into the slot
+        place(sfx, tick(720 + k, 1.0), 2.50 + k * 0.018, 0.2, pan=0.1)
+    for k in range(4):                                                  # selection steps back over the line
+        place(sfx, tick(730 + k, 0.6), 2.64 + k * 0.06, 0.1, pan=0.2 - k * 0.12)
+    place(sfx, whoosh(0.35, 52, lo=900, hi=6000, peak=0.5), 2.86, 0.1)  # options unfurl
+    for k, tt in enumerate((3.257, 3.337, 3.412)):                     # wheel detents as each word passes the slot
+        place(sfx, detent(760 + k), tt, 0.3, pan=0.15)
+    for k in range(4):                                                  # selection steps back over Land
+        place(sfx, tick(740 + k, 0.6), 3.69 + k * 0.04, 0.1, pan=0.2)
+    place(sfx, riser(0.45, 37, 300, 2400), 3.55, 0.1)                   # into the whip
+    place(sfx, whoosh(0.4, 33, peak=0.45), 3.82, 0.4)                   # whip to the sky
     for k in range(23):                                                 # pill typing
-        place(sfx, tick(500 + k, 0.8), 3.35 + k * 0.02 + rnd() * 0.004, 0.16, pan=0.1)
-    place(sfx, whoosh(0.3, 34, lo=400, peak=0.55), 3.94, 0.16)          # pill collapses into the button
+        place(sfx, tick(500 + k, 0.8), 4.35 + k * 0.02 + rnd() * 0.004, 0.16, pan=0.1)
+    place(sfx, whoosh(0.3, 34, lo=400, peak=0.55), 4.94, 0.16)          # pill collapses into the button
 
     # World transition.
-    place(sfx, whoosh(0.7, 42, lo=60, hi=900, peak=0.25), 4.50, 0.42)   # the button opens onto space
-    place(sfx, shimmer(0.9, 43), 4.53, 0.05, pan=0.2)
-    place(sfx, whoosh(1.25, 44, lo=120, hi=2600, peak=0.85), 4.55, 0.3) # falling toward West Africa
-    place(sfx, whoosh(0.6, 45, lo=200, hi=3500, peak=0.45), 5.98, 0.2, pan=-0.6)   # horizon pass, left to right
-    place(sfx, whoosh(0.6, 46, lo=200, hi=3500, peak=0.45), 6.06, 0.2, pan=0.6)
-    place(sfx, whoosh(0.5, 47, lo=300, hi=5000, peak=0.7), 6.50, 0.26)  # dive onto Ibadan
-    place(sfx, riser(0.4, 48, 200, 1600), 6.60, 0.12)
-    place(sfx, whoosh(0.35, 49, lo=1500, hi=7000, peak=0.4), 7.62, 0.12)  # title wipes off
-    place(sfx, whoosh(0.6, 50, lo=150, hi=1800, peak=0.5), 7.75, 0.24)  # tilt over the city
-    for k, tt in enumerate((9.52, 9.70, 9.86)):                        # labels arrive
+    place(sfx, whoosh(0.7, 42, lo=60, hi=900, peak=0.25), 5.50, 0.42)   # the button opens onto space
+    place(sfx, shimmer(0.9, 43), 5.53, 0.05, pan=0.2)
+    place(sfx, whoosh(1.25, 44, lo=120, hi=2600, peak=0.85), 5.55, 0.3) # falling toward West Africa
+    place(sfx, whoosh(0.6, 45, lo=200, hi=3500, peak=0.45), 6.98, 0.2, pan=-0.6)   # horizon pass, left to right
+    place(sfx, whoosh(0.6, 46, lo=200, hi=3500, peak=0.45), 7.06, 0.2, pan=0.6)
+    place(sfx, whoosh(0.5, 47, lo=300, hi=5000, peak=0.7), 7.50, 0.26)  # dive onto Ibadan
+    place(sfx, riser(0.4, 48, 200, 1600), 7.60, 0.12)
+    place(sfx, whoosh(0.35, 49, lo=1500, hi=7000, peak=0.4), 8.62, 0.12)  # title wipes off
+    place(sfx, whoosh(0.6, 50, lo=150, hi=1800, peak=0.5), 8.75, 0.24)  # tilt over the city
+    for k, tt in enumerate((10.52, 10.70, 10.86)):                     # labels arrive
         place(sfx, tick(960 + k, 0.8), tt, 0.16, pan=(k - 1) * 0.4)
-    place(sfx, whoosh(0.4, 51, lo=600, hi=5000, peak=0.5), 9.62, 0.1)  # junction ring draws
+    place(sfx, whoosh(0.4, 51, lo=600, hi=5000, peak=0.5), 10.62, 0.1)  # junction ring draws
 
     ir = reverb_ir()
     def verb(x, mix):
