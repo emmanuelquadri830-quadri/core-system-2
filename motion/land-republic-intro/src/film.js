@@ -381,6 +381,14 @@ LABELS.forEach((L, i) => {
   $('roadLabels').appendChild(text);
   L.path = path;
 });
+{
+  const cEnd = earthCam(DURATION - 0.3);
+  for (const L of LABELS) {
+    const q = L.route.map(p => project(cEnd, p[0], p[1])).filter(Boolean);
+    const a = q[0], b = q[Math.min(q.length - 1, 2)];
+    L.rev = b[0] < a[0];
+  }
+}
 const TITLE_CITY = 'IBADAN';
 const citySpans = [...TITLE_CITY].map(ch => { const s = document.createElementNS(NS, 'tspan'); s.textContent = ch; $('cityTitle').appendChild(s); return s; });
 const RING_TEXT = 'IBADAN';
@@ -388,7 +396,7 @@ $('ringLabel').textContent = RING_TEXT;
 
 // The stretch of a route between s0 and s1 screen pixels along it, densified so it follows
 // the road, and turned to read left to right.
-function labelPath(c, pts, s0, s1) {
+function labelPath(c, pts, s0, s1, rev = null) {
   const q = [];
   for (let i = 0; i < pts.length - 1; i++) {
     for (let k = 0; k < 24; k++) {
@@ -404,7 +412,8 @@ function labelPath(c, pts, s0, s1) {
     if (acc >= s0 && acc <= s1 && q[i][0] > -200 && q[i][0] < W + 200 && q[i][1] > -200 && q[i][1] < H + 200) out.push(q[i]);
   }
   if (out.length < 2) return '';
-  if (out[out.length - 1][0] < out[0][0]) out.reverse();
+  // Reading direction is fixed per label (see LABELS); a per-frame test flips near-vertical roads.
+  if (rev === null ? out[out.length - 1][0] < out[0][0] : rev) out.reverse();
   // Chaikin corner cutting so glyphs do not spread apart at the road's bends
   let sm = out.filter((p, i) => i % 6 === 0 || i === out.length - 1);
   for (let it = 0; it < 4; it++) {
@@ -453,7 +462,7 @@ function worldOverlay(t, c) {
   // Labels arrive letter by letter along their roads.
   LABELS.forEach(L => {
     const on = t >= L.t0;
-    L.path.setAttribute('d', on ? labelPath(c, L.route, L.s0, L.s1) : '');
+    L.path.setAttribute('d', on ? labelPath(c, L.route, L.s0, L.s1, L.rev) : '');
     L.spans.forEach((sp, i) => sp.setAttribute('fill-opacity', clamp((t - L.t0 - i * 0.012) / 0.08).toFixed(3)));
   });
 
