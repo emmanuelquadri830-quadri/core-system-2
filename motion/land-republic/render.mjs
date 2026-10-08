@@ -1,5 +1,6 @@
 // node render.mjs --ar 16x9 [--fps 30] [--blur 4] [--shutter 0.5] [--from 0] [--to 20]
 //                 [--workers 3] [--crf 16] [--out out/land-republic-16x9.mp4]
+//                 [--film location]   render the 15 s location film instead
 //
 // Frames come from window.seek(t) in headless Chromium. With --blur N each
 // output frame averages N sub-frames spread across a centred shutter
@@ -24,11 +25,12 @@ const FPS = +(args.fps || 30);
 const BLUR = Math.max(1, +(args.blur || 1));
 const SHUTTER = +(args.shutter || 0.5);
 const FROM = +(args.from || 0);
-const TO = +(args.to || 20);
+const TO = +(args.to || (args.film === 'location' ? 15 : 20));
 const WORKERS = +(args.workers || Math.max(1, Math.min(4, os.cpus().length - 1)));
 const CRF = +(args.crf || 16);
-const OUT = path.resolve(ROOT, args.out || `out/land-republic-${AR}.mp4`);
-const AUDIO = path.join(ROOT, 'build', 'audio', 'mix.wav');
+const FILM = args.film === 'location' ? 'location' : 'film';
+const OUT = path.resolve(ROOT, args.out || (FILM === 'location' ? `out/land-republic-location-${AR}.mp4` : `out/land-republic-${AR}.mp4`));
+const AUDIO = path.join(ROOT, 'build', 'audio', FILM === 'location' ? 'location-mix.wav' : 'mix.wav');
 const SIZES = { '16x9': [1920, 1080], '1x1': [1080, 1080], '9x16': [1080, 1920] };
 const [W, H] = SIZES[AR];
 
@@ -59,7 +61,7 @@ const subOffsets = Array.from({ length: BLUR }, (_, j) => (BLUR === 1 ? 0 : ((j 
 
 const { server, port } = await serve(ROOT);
 const browser = await chromium.launch({ args: ['--disable-gpu-vsync', '--font-render-hinting=none'] });
-const url = `http://127.0.0.1:${port}/film/index.html?ar=${AR}&render=1${args.scenes ? `&scenes=${args.scenes}` : ''}`;
+const url = `http://127.0.0.1:${port}/${FILM}/index.html?ar=${AR}&render=1${args.scenes ? `&scenes=${args.scenes}` : ''}`;
 
 async function worker(k, start, end) {
   const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });

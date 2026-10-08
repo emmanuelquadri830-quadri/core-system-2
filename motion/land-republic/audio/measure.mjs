@@ -9,11 +9,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SR, readWav } from './dsp.mjs';
-import { BPM, BEATS } from '../timeline.mjs';
+import { BPM as BPM0, BEATS as BEATS0 } from '../timeline.mjs';
+
+// Defaults measure the first film; pass --music, --out, --bpm and --beats to
+// measure another score (location/audio.mjs does).
+const arg = (k, d) => {
+  const i = process.argv.indexOf(`--${k}`);
+  return i > 0 ? process.argv[i + 1] : d;
+};
+const BPM = +arg('bpm', BPM0);
+const BEATS = +arg('beats', BEATS0);
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
-const src = path.join(root, 'build', 'audio', 'music.wav');
+const src = path.resolve(arg('music', path.join(root, 'build', 'audio', 'music.wav')));
 const { L, R } = readWav(src, fs);
 
 const win = Math.round(0.002 * SR);
@@ -104,5 +113,5 @@ const out = {
   downbeats: beats.filter((_, k) => k % 4 === 0),
   onsets: residuals,
 };
-fs.writeFileSync(path.join(root, 'beats.json'), JSON.stringify(out, null, 1));
+fs.writeFileSync(path.resolve(arg('out', path.join(root, 'beats.json'))), JSON.stringify(out, null, 1));
 console.log(`bpm ${out.bpm}  offset ${(offset * 1000).toFixed(2)} ms  onsets on grid ${n}/${BEATS}  max residual ${maxResidualMs} ms`);

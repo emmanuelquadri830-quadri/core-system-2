@@ -1,6 +1,6 @@
 {
  "source": "build/audio/music.wav",
- "method": "2 ms log-energy flux, comb search around nominal tempo, least-squares fit through onsets within 25 ms of the grid",
+ "method": "2 ms log-energy flux, comb search around nominal tempo, least-squares fit through onsets within 15 ms of the grid, refit without onsets more than 3 ms off",
  "nominalBpm": 120,
  "bpm": 120,
  "period": 0.500001,

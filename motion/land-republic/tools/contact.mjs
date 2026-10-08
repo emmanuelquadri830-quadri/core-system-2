@@ -13,7 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { serve } from './serve.mjs';
-import { SECTIONS, BEATS } from '../timeline.mjs';
+
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = Object.fromEntries(
@@ -21,7 +21,9 @@ const args = Object.fromEntries(
 );
 const MODE = args.mode || (args.times ? 'times' : 'beats');
 const OFFSET = +(args.offset ?? 0.1);
-const grid = JSON.parse(fs.readFileSync(path.join(ROOT, 'beats.json'), 'utf8'));
+const FILM = args.film === 'location' ? 'location' : 'film';
+const { SECTIONS, BEATS } = await import(FILM === 'location' ? '../location/timeline.mjs' : '../timeline.mjs');
+const grid = JSON.parse(fs.readFileSync(path.join(ROOT, FILM === 'location' ? 'location/beats.json' : 'beats.json'), 'utf8'));
 const T = (b) => grid.offset + b * grid.period;
 const SIZES = { '16x9': [1920, 1080], '1x1': [1080, 1080], '9x16': [1080, 1920] };
 const outDir = path.join(ROOT, 'build', 'sheets');
@@ -34,7 +36,7 @@ async function grab(ar, times, tag) {
   const [W, H] = SIZES[ar];
   const page = await browser.newPage({ viewport: { width: W, height: H } });
   page.on('pageerror', (e) => console.error('page error', e.message));
-  await page.goto(`http://127.0.0.1:${port}/film/index.html?ar=${ar}&render=1${args.scenes ? `&scenes=${args.scenes}` : ''}`);
+  await page.goto(`http://127.0.0.1:${port}/${FILM}/index.html?ar=${ar}&render=1${args.scenes ? `&scenes=${args.scenes}` : ''}`);
   await page.waitForFunction(() => window.ready, null, { timeout: 120000 });
   await page.evaluate(() => window.ready);
   const files = [];
@@ -58,7 +60,7 @@ if (MODE === 'beats' || MODE === 'times') {
   const files = await grab(ar, times, MODE);
   const cols = ar === '16x9' ? 5 : ar === '1x1' ? 6 : 8;
   const tw = ar === '16x9' ? 384 : ar === '1x1' ? 300 : 216;
-  name = `${MODE}-${ar}`;
+  name = `${FILM === 'location' ? 'location-' : ''}${MODE}-${ar}`;
   html = `<div class="grid" style="grid-template-columns:repeat(${cols},${tw}px)">${files
     .map((f, i) => {
       const t = times[i];
@@ -79,7 +81,7 @@ if (MODE === 'beats' || MODE === 'times') {
       .map((ar) => `<img src="file://${shots[ar][i]}" style="height:${h}px">`)
       .join('')}</div>`);
   });
-  name = 'story';
+  name = FILM === 'location' ? 'location-story' : 'story';
   html = rows.join('');
 }
 

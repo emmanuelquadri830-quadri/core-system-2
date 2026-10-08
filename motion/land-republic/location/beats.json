@@ -1,0 +1,158 @@
+{
+ "source": "build/audio/location-pulse.wav",
+ "method": "2 ms log-energy flux, comb search around nominal tempo, least-squares fit through onsets within 15 ms of the grid, refit without onsets more than 3 ms off",
+ "nominalBpm": 80,
+ "bpm": 80,
+ "period": 0.75,
+ "offset": 0,
+ "beatsDetected": 19,
+ "rejected": [],
+ "maxResidualMs": 0,
+ "beats": [
+  0,
+  0.75,
+  1.5,
+  2.25,
+  3,
+  3.75,
+  4.5,
+  5.25,
+  6,
+  6.75,
+  7.5,
+  8.25,
+  9,
+  9.75,
+  10.5,
+  11.25,
+  12,
+  12.75,
+  13.5,
+  14.25,
+  15
+ ],
+ "downbeats": [
+  0,
+  3,
+  6,
+  9,
+  12,
+  15
+ ],
+ "onsets": [
+  {
+   "k": 1,
+   "t": 0.75,
+   "strength": 7.14,
+   "residualMs": 0
+  },
+  {
+   "k": 2,
+   "t": 1.5,
+   "strength": 7.14,
+   "residualMs": 0
+  },
+  {
+   "k": 3,
+   "t": 2.25,
+   "strength": 7.13,
+   "residualMs": 0
+  },
+  {
+   "k": 4,
+   "t": 3,
+   "strength": 7.64,
+   "residualMs": 0
+  },
+  {
+   "k": 5,
+   "t": 3.75,
+   "strength": 7.14,
+   "residualMs": 0
+  },
+  {
+   "k": 6,
+   "t": 4.5,
+   "strength": 7.13,
+   "residualMs": 0
+  },
+  {
+   "k": 7,
+   "t": 5.25,
+   "strength": 7.14,
+   "residualMs": 0
+  },
+  {
+   "k": 8,
+   "t": 6,
+   "strength": 7.64,
+   "residualMs": 0
+  },
+  {
+   "k": 9,
+   "t": 6.75,
+   "strength": 7.14,
+   "residualMs": 0
+  },
+  {
+   "k": 10,
+   "t": 7.5,
+   "strength": 7.13,
+   "residualMs": 0
+  },
+  {
+   "k": 11,
+   "t": 8.25,
+   "strength": 7.14,
+   "residualMs": 0
+  },
+  {
+   "k": 12,
+   "t": 9,
+   "strength": 7.63,
+   "residualMs": 0
+  },
+  {
+   "k": 13,
+   "t": 9.75,
+   "strength": 7.13,
+   "residualMs": 0
+  },
+  {
+   "k": 14,
+   "t": 10.5,
+   "strength": 7.15,
+   "residualMs": 0
+  },
+  {
+   "k": 15,
+   "t": 11.25,
+   "strength": 7.14,
+   "residualMs": 0
+  },
+  {
+   "k": 16,
+   "t": 12,
+   "strength": 7.64,
+   "residualMs": 0
+  },
+  {
+   "k": 17,
+   "t": 12.75,
+   "strength": 7.14,
+   "residualMs": 0
+  },
+  {
+   "k": 18,
+   "t": 13.5,
+   "strength": 7.14,
+   "residualMs": 0
+  },
+  {
+   "k": 19,
+   "t": 14.25,
+   "strength": 7.14,
+   "residualMs": 0
+  }
+ ]
+}

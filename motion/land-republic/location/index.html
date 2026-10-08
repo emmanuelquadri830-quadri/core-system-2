@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Land Republic film</title>
+<link rel="stylesheet" href="../film/film.css">
+</head>
+<body>
+<div id="stage"></div>
+<div id="dock" hidden>
+  <button id="play">Play</button>
+  <input id="scrub" type="range" min="0" max="20" step="0.0333" value="0">
+  <output id="time">0.00</output>
+  <select id="ar"><option>16x9</option><option>1x1</option><option>9x16</option></select>
+</div>
+<script type="module" src="./film.js"></script>
+</body>
+</html>

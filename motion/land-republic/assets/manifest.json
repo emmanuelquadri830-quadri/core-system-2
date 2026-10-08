@@ -16,13 +16,41 @@
     "fontSource": "Stand-in. The site's face could not be identified from a 573 px screenshot; Red Hat Display matched the measured heading widths best. Swap here when the real face is known."
   },
   "fonts": [
-    { "family": "Red Hat Display", "file": "fonts/RedHatDisplay-400.ttf", "weight": "400" },
-    { "family": "Red Hat Display", "file": "fonts/RedHatDisplay-500.ttf", "weight": "500" },
-    { "family": "Red Hat Display", "file": "fonts/RedHatDisplay-600.ttf", "weight": "600" },
-    { "family": "Red Hat Display", "file": "fonts/RedHatDisplay-700.ttf", "weight": "700" },
-    { "family": "Red Hat Text", "file": "fonts/RedHatText-400.ttf", "weight": "400" },
-    { "family": "Red Hat Text", "file": "fonts/RedHatText-500.ttf", "weight": "500" },
-    { "family": "Red Hat Text", "file": "fonts/RedHatText-700.ttf", "weight": "700" }
+    {
+      "family": "Red Hat Display",
+      "file": "fonts/RedHatDisplay-400.ttf",
+      "weight": "400"
+    },
+    {
+      "family": "Red Hat Display",
+      "file": "fonts/RedHatDisplay-500.ttf",
+      "weight": "500"
+    },
+    {
+      "family": "Red Hat Display",
+      "file": "fonts/RedHatDisplay-600.ttf",
+      "weight": "600"
+    },
+    {
+      "family": "Red Hat Display",
+      "file": "fonts/RedHatDisplay-700.ttf",
+      "weight": "700"
+    },
+    {
+      "family": "Red Hat Text",
+      "file": "fonts/RedHatText-400.ttf",
+      "weight": "400"
+    },
+    {
+      "family": "Red Hat Text",
+      "file": "fonts/RedHatText-500.ttf",
+      "weight": "500"
+    },
+    {
+      "family": "Red Hat Text",
+      "file": "fonts/RedHatText-700.ttf",
+      "weight": "700"
+    }
   ],
   "logo": {
     "source": "incoming/logo-header.png (113 x 40, white on transparent)",
@@ -38,36 +66,149 @@
     "h": 2000,
     "dpr": 1,
     "targets": {
-      "topbarLink": [251.7, 3, 69, 10],
-      "navLogo": [101.7, 21, 32.3, 10.7],
-      "navOurProperties": [308, 22, 28, 8],
-      "navLogin": [441.7, 19.7, 29.6, 13.3],
-      "hero": [0, 37, 573, 248],
-      "heroTitle": [101.7, 147.7, 98.3, 20],
-      "heroBody": [101, 176.7, 165.7, 33.3],
-      "heroCTA": [101.3, 221, 55.7, 15],
-      "learnMore": [101.7, 614.3, 75, 22.4],
-      "youDontSell": [209, 696.7, 111, 15],
-      "cardPartner": [101.7, 746, 119.3, 64],
-      "cardTraining": [226.7, 746, 119.3, 64],
-      "cardVerified": [351, 746, 120.3, 64],
-      "cardBlue": [310.7, 961, 114.6, 105.7],
-      "faqHeading": [101.7, 1400, 111.6, 28.3],
-      "ctaHeading": [101.7, 1596, 175, 57],
-      "ctaButton": [101.3, 1681, 80.7, 14.3]
+      "topbarLink": [
+        251.7,
+        3,
+        69,
+        10
+      ],
+      "navLogo": [
+        101.7,
+        21,
+        32.3,
+        10.7
+      ],
+      "navOurProperties": [
+        308,
+        22,
+        28,
+        8
+      ],
+      "navLogin": [
+        441.7,
+        19.7,
+        29.6,
+        13.3
+      ],
+      "hero": [
+        0,
+        37,
+        573,
+        248
+      ],
+      "heroTitle": [
+        101.7,
+        147.7,
+        98.3,
+        20
+      ],
+      "heroBody": [
+        101,
+        176.7,
+        165.7,
+        33.3
+      ],
+      "heroCTA": [
+        101.3,
+        221,
+        55.7,
+        15
+      ],
+      "learnMore": [
+        101.7,
+        614.3,
+        75,
+        22.4
+      ],
+      "youDontSell": [
+        209,
+        696.7,
+        111,
+        15
+      ],
+      "cardPartner": [
+        101.7,
+        746,
+        119.3,
+        64
+      ],
+      "cardTraining": [
+        226.7,
+        746,
+        119.3,
+        64
+      ],
+      "cardVerified": [
+        351,
+        746,
+        120.3,
+        64
+      ],
+      "cardBlue": [
+        310.7,
+        961,
+        114.6,
+        105.7
+      ],
+      "faqHeading": [
+        101.7,
+        1400,
+        111.6,
+        28.3
+      ],
+      "ctaHeading": [
+        101.7,
+        1596,
+        175,
+        57
+      ],
+      "ctaButton": [
+        101.3,
+        1681,
+        80.7,
+        14.3
+      ]
     }
   },
   "images": {
-    "perspective": { "file": "images/civic-perspective.webp", "w": 970, "h": 1213, "source": "incoming/civic-apartment-perspective.webp" },
-    "front": { "file": "images/civic-front.webp", "w": 970, "h": 1213, "source": "incoming/civic-apartment-front.webp" },
-    "aerial": { "file": "images/civic-aerial.webp", "w": 970, "h": 1213, "source": "incoming/civic-apartment-aerial.webp" }
+    "perspective": {
+      "file": "images/civic-perspective.webp",
+      "w": 970,
+      "h": 1213,
+      "source": "incoming/civic-apartment-perspective.webp"
+    },
+    "front": {
+      "file": "images/civic-front.webp",
+      "w": 970,
+      "h": 1213,
+      "source": "incoming/civic-apartment-front.webp"
+    },
+    "aerial": {
+      "file": "images/civic-aerial.webp",
+      "w": 970,
+      "h": 1213,
+      "source": "incoming/civic-apartment-aerial.webp"
+    }
   },
   "listing": {
     "name": "Civic Apartment",
-    "nameSource": "Signage on the building in civic-apartment-front.webp",
-    "location": null,
-    "price": null,
-    "size": null
+    "location": "Lekki Ajah, Lagos",
+    "units": "1 & 2 bedroom apartments",
+    "price": {
+      "1 bedroom": "N65M",
+      "2 bedroom": "N85M"
+    },
+    "initialDeposit": "N20 million",
+    "amenities": [
+      "24/7 Security & CCTV Surveillance",
+      "Uninterrupted Power Supply",
+      "Swimming Pool & Recreation Area",
+      "Fully Equipped Gym",
+      "Warranty on Finishes",
+      "High-Speed Internet Ready"
+    ],
+    "source": "incoming/flyer-civic-apartment.webp (Land Republic flyer supplied by the client)",
+    "sitePin": "Not supplied; the film marks the Lekki Ajah area only."
   },
   "proof": {
     "from": 10,
@@ -81,9 +222,17 @@
   "copy": {
     "hook": "Finding the right land shouldn't be this hard.",
     "brand": "Your path to the right property.",
-    "trust": ["Find it.", "Own it.", "Build on it."],
+    "trust": [
+      "Find it.",
+      "Own it.",
+      "Build on it."
+    ],
     "next": "Find your next property.",
-    "tagline": ["Discover.", "Invest.", "Own."],
+    "tagline": [
+      "Discover.",
+      "Invest.",
+      "Own."
+    ],
     "copySource": "The client's brief"
   }
 }
