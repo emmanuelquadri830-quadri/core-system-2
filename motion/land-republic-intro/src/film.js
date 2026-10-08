@@ -230,13 +230,6 @@ const BTN_R = 66;
 
 function seek(t) {
   t = clamp(t, 0, DURATION);
-  // Rebuild the SVG render tree every frame. Chromium caches rasters of masked and
-  // filtered groups and can repaint them stale in later frames; tearing the tree down
-  // guarantees nothing painted for one frame survives into the next.
-  const stage = $('stage');
-  stage.style.display = 'none';
-  void stage.getBoundingClientRect();
-  stage.style.display = '';
 
   // ---------------- Scene A: the mark assembles, then the lockup forms (0.00-2.00)
   const whipU = prog(t, 1.84, 2.02);
@@ -278,7 +271,7 @@ function seek(t) {
   const pillU = settleHit(t, 1.98, T.pill_land, 0.024, 0.6);
   const pillDrift = 26 * E.inOutSine(prog(t, T.pill_land + 0.2, 3.1));
   const py = lerp(-220, PILL.y, pillU) + pillDrift;
-  const colU = E.inOutCubic(prog(t, 3.04, 3.24));
+  const colU = E.inOutCubic(prog(t, 3.08, 3.26));
   const btnX0 = PILL.x + PILL.w + 24 + BTN_R;
   const pillL = lerp(PILL.x, btnX0 - BTN_R, colU);
   const pillWd = lerp(PILL.w, BTN_R * 2, colU);
@@ -287,16 +280,16 @@ function seek(t) {
   show($('pill'), colU < 0.999);
 
   const qx = PILL.x + 132;
-  set($('query'), { x: qx, y: (py + 17).toFixed(1) });
-  const typedN = typeChars(qSpans, t, 2.45, 0.026);
-  const typingDone = 2.45 + QUERY.length * 0.026;
+  set($('query'), { x: (qx + (pillL - PILL.x)).toFixed(1), y: (py + 17).toFixed(1) });
+  const typedN = typeChars(qSpans, t, 2.40, 0.02);
+  const typingDone = 2.40 + QUERY.length * 0.02;
   const caretOn = t < typingDone + 0.02 || Math.floor((t - typingDone) * 3.2) % 2 === 1;
-  set($('queryCaret'), { x: (qx + typedN * QW + 3).toFixed(1), y: (py - 30).toFixed(1), opacity: t >= 2.3 && caretOn ? 1 : 0 });
+  set($('queryCaret'), { x: (qx + (pillL - PILL.x) + typedN * QW + 3).toFixed(1), y: (py - 30).toFixed(1), opacity: t >= 2.3 && caretOn ? 1 : 0 });
 
   // Button: drops with the pill (a beat of follow-through), then takes the stage.
   const btnDropU = settleHit(t, 2.01, T.pill_land + 0.03, 0.03, 0.6);
   const by0 = lerp(-220, PILL.y, btnDropU) + pillDrift;
-  const travU = E.inOutCubic(prog(t, 3.12, 3.42));
+  const travU = E.inOutCubic(prog(t, 3.16, 3.44));
   let bx = lerp(btnX0, CX, travU), by = lerp(by0, 1010, travU);
   let br = lerp(BTN_R, 96, travU);
   const press = 1 - 0.14 * E.inQuad(prog(t, T.click - 0.08, T.click));
@@ -304,7 +297,7 @@ function seek(t) {
   const bk = t < T.click ? press : lerp(0.86, 1, release);
   br *= bk;
   set($('btnCircle'), { cx: bx.toFixed(1), cy: by.toFixed(1), r: br.toFixed(2) });
-  const arrowK = 1 - E.inOutCubic(prog(t, 3.08, 3.2));
+  const arrowK = 1 - E.inOutCubic(prog(t, 3.12, 3.22));
   set($('btnArrow'), { transform: `translate(${bx.toFixed(1)} ${by.toFixed(1)}) scale(${(arrowK * br / BTN_R).toFixed(3)})`, opacity: arrowK > 0.01 ? 1 : 0 });
 
   // The mark travels from the lockup into the pill, then rides the collapse into the button.
@@ -314,14 +307,14 @@ function seek(t) {
     const iconS = 1.75;
     hub = [lerp(hub[0], iconTarget[0], flyU), lerp(hub[1], iconTarget[1], flyU)];
     S = lerp(S, iconS, flyU);
-    if (t >= 3.04) {
+    if (t >= 3.08) {
       const rideU = colU;
       hub = [lerp(iconTarget[0], btnX0, rideU), py];
       S = lerp(iconS, 1.9, rideU);
-      if (t >= 3.12) { hub = [bx, by]; S = lerp(1.9, 3.1, travU) * bk * (1 - E.inCubic(prog(t, T.click + 0.04, T.click + 0.22))); }
+      if (t >= 3.16) { hub = [bx, by]; S = lerp(1.9, 3.1, travU) * bk * (1 - E.inCubic(prog(t, T.click + 0.04, T.click + 0.22))); }
     }
   }
-  const markWhite = E.inOutCubic(prog(t, 3.14, 3.26));
+  const markWhite = E.inOutCubic(prog(t, 3.18, 3.30));
   set($('markArms'), { fill: mixHex('#0F68D8', '#FFFFFF', markWhite) });
   set($('mark'), { transform: `translate(${hub[0].toFixed(2)} ${hub[1].toFixed(2)}) scale(${S.toFixed(4)}) rotate(${spin.toFixed(3)}) translate(${-HUB[0]} ${-HUB[1]})` });
   show($('mark'), t < T.click + 0.23);
@@ -366,7 +359,7 @@ function seek(t) {
   show($('mapGrain'), t >= 4.69);
 
   // contour lines behind the typed line, drawn left to right then drawn off
-  const cIn = E.outCubic(prog(t, 4.25, 4.9));
+  const cIn = E.outCubic(prog(t, 4.40, 4.95));
   const cOut = E.inOutCubic(prog(t, T.map, T.map + 0.45));
   contourEls.forEach((el, i) => {
     set(el, {
@@ -382,10 +375,10 @@ function seek(t) {
   set($('title'), { transform: `translate(${CX} ${ty.toFixed(1)}) scale(${tk.toFixed(4)}) translate(${-CX} ${-985})` });
   set($('titleText'), { x: tx.toFixed(1), y: 985 });
   set($('titleTextHi'), { x: tx.toFixed(1), y: 985 });
-  const tn = typeChars(tSpans, t, 4.30, 0.026);
-  const titleDone = 4.30 + TITLE.length * 0.026;
+  const tn = typeChars(tSpans, t, 4.38, 0.019);
+  const titleDone = 4.38 + TITLE.length * 0.019;
   const tCaret = (t < titleDone + 0.02 || Math.floor((t - titleDone) * 3.2) % 2 === 1) && t < T.highlight - 0.06;
-  set($('titleCaret'), { x: (tx + tn * TW + 4).toFixed(1), y: 985 - 50, opacity: t >= 4.26 && tCaret ? 1 : 0 });
+  set($('titleCaret'), { x: (tx + tn * TW + 4).toFixed(1), y: 985 - 50, opacity: t >= 4.36 && tCaret ? 1 : 0 });
   const hu = E.outCubic(prog(t, T.highlight - 0.07, T.highlight + 0.12));
   const hlW = (6 * TW + 20) * hu;
   set($('hlRect'), { x: tx - 10, y: 985 - 52, width: hlW.toFixed(1), height: 70 });
@@ -502,12 +495,12 @@ function seek(t) {
     show($('card'), t >= 7.68);
     set($('card'), { transform: `translate(${(W - 856) / 2} ${cy.toFixed(1)})` });
     const rev = (a, b) => E.outExpo(prog(t, a, b));
-    const uT = rev(7.92, 8.3), uS = rev(8.0, 8.38), uP = rev(8.16, 8.54);
+    const uT = rev(7.84, 8.2), uS = rev(7.92, 8.3), uP = rev(8.08, 8.46);
     set($('cardTitle'), { y: (138 + 110 * (1 - uT)).toFixed(1) });
     set($('cardTitleClipRect'), { x: 0, y: 40, width: 856, height: 124 });
     set($('cardSub'), { y: (200 + 60 * (1 - uS)).toFixed(1) });
     set($('cardSubClipRect'), { x: 0, y: 164, width: 856, height: 52 });
-    const ruleU = E.inOutCubic(prog(t, 8.08, 8.46));
+    const ruleU = E.inOutCubic(prog(t, 8.0, 8.4));
     set($('cardRule'), { x2: (58 + (856 - 116) * ruleU).toFixed(1) });
     set($('cardSize'), { y: (318 + 60 * (1 - uP)).toFixed(1) });
     set($('cardPrice'), { x: 798, y: (320 + 60 * (1 - uP)).toFixed(1) });
@@ -515,10 +508,10 @@ function seek(t) {
 
     // Small mark on the card re-assembles, echoing the opening.
     const cmS = 1.55;
-    const cmSpin = -38 * (1 - E.outExpo(prog(t, 7.95, 8.4)));
+    const cmSpin = -38 * (1 - E.outExpo(prog(t, 7.9, 8.35)));
     set($('cardMark'), { transform: `translate(${856 - 56 - 17 * cmS} ${44 + 18 * cmS}) scale(${cmS}) rotate(${cmSpin.toFixed(2)}) translate(${-HUB[0]} ${-HUB[1]})` });
     ARM_ORDER.forEach((i, kk) => {
-      const u = E.outExpo(prog(t, 7.95 + kk * 0.03, 8.4));
+      const u = E.outExpo(prog(t, 7.9 + kk * 0.03, 8.35));
       const off = 14 * (1 - u);
       set(cardArms[i], { transform: `translate(${(ARMS[i].dir[0] * off).toFixed(3)} ${(ARMS[i].dir[1] * off).toFixed(3)})`, opacity: u > 0 ? 1 : 0 });
     });

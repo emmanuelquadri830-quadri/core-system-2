@@ -273,7 +273,7 @@ def build():
     place(sfx, whoosh(0.4, 33, peak=0.45), 1.82, 0.4)            # whip
     rnd = mulberry32(55)
     for k in range(23):                                          # pill typing
-        place(sfx, tick(500 + k, 0.8), 2.45 + k * 0.026 + rnd() * 0.006, 0.16, pan=0.1)
+        place(sfx, tick(500 + k, 0.8), 2.40 + k * 0.02 + rnd() * 0.004, 0.16, pan=0.1)
     place(sfx, whoosh(0.3, 34, lo=400, peak=0.55), 2.98, 0.16)   # pill collapses into the button
     place(sfx, whoosh(0.6, 35, lo=120, hi=1800, peak=0.5), 3.50, 0.3)   # blue flood
     place(sfx, whoosh(0.7, 36, lo=200, hi=3000, peak=0.55), 4.00, 0.22)  # light wave

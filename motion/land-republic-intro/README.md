@@ -7,7 +7,7 @@ A 1080×1920 (9:16) 30 fps intro for Instagram and TikTok. It runs brand, then l
 ```
 python3 audio/score.py      # synthesize the score, measure onsets -> beats.json
 node render.mjs --sheet     # one frame per measured beat -> out/sheet.png
-node render.mjs --verify    # render contract check (sequential vs fresh page)
+node render.mjs --verify    # determinism check (each sample painted twice)
 node render.mjs             # full render -> out/land-republic-intro_0-9s.mp4
 ```
 
@@ -17,7 +17,8 @@ Requires Node 22, Playwright Chromium and ffmpeg. The Python steps need numpy, s
 
 - `window.seek(t)` paints frame `t` from nothing. There are no CSS transitions, timers or `requestAnimationFrame` in render mode, and no state is carried between frames.
 - Randomness comes from mulberry32 seeds (JS and Python) and hash noise in the shaders. Nothing uses `Math.random`.
-- Each `seek` tears down and rebuilds the SVG render tree. Without that, Chromium reuses stale rasters of masked and filtered groups in later frames. `--verify` caught this, and it now passes.
+- `render.mjs` paints every frame on a freshly loaded page (three pages in parallel, frames written in order). When frames were painted one after another on the same page, Chromium reused stale raster tiles: survey lines from 7.2 s appeared at 7.4 s, and the masked map leaked into the land. A sequential-versus-fresh check caught both. Fresh pages rule out carried state by construction.
+- `--verify` paints a sample of frames twice, in different orders and on different pages, and fails on anything beyond rasteriser noise (more than 50 pixels differing, or any pixel off by more than 48/765).
 - Encode: H.264 High, yuv420p, CRF 16, AAC 320k.
 
 ## Sound
