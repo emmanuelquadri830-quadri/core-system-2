@@ -279,12 +279,12 @@ function seek(t) {
   set($('pillClipRect'), { x: pillL + 2, y: py - PILL.h / 2, width: Math.max(0, pillWd - 4), height: PILL.h, rx: PILL.h / 2 });
   show($('pill'), colU < 0.999);
 
-  const qx = PILL.x + 132;
-  set($('query'), { x: (qx + (pillL - PILL.x)).toFixed(1), y: (py + 17).toFixed(1) });
+  const qx = PILL.x + 122;
+  set($('query'), { x: (qx + (pillL - PILL.x)).toFixed(1), y: (py + 16).toFixed(1) });
   const typedN = typeChars(qSpans, t, 2.40, 0.02);
   const typingDone = 2.40 + QUERY.length * 0.02;
   const caretOn = t < typingDone + 0.02 || Math.floor((t - typingDone) * 3.2) % 2 === 1;
-  set($('queryCaret'), { x: (qx + (pillL - PILL.x) + typedN * QW + 3).toFixed(1), y: (py - 30).toFixed(1), opacity: t >= 2.3 && caretOn ? 1 : 0 });
+  set($('queryCaret'), { x: (qx + (pillL - PILL.x) + typedN * QW + 3).toFixed(1), y: (py - 28).toFixed(1), opacity: t >= 2.3 && caretOn ? 1 : 0 });
 
   // Button: drops with the pill (a beat of follow-through), then takes the stage.
   const btnDropU = settleHit(t, 2.01, T.pill_land + 0.03, 0.03, 0.6);
