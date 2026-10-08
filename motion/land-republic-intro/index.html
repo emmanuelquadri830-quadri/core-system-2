@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Land Republic Intro</title>
+<meta name="viewport" content="width=1080">
+<style>
+  @font-face { font-family: "Figtree"; font-weight: 600; src: url(assets/fonts/figtree-latin-600-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Figtree"; font-weight: 800; src: url(assets/fonts/figtree-latin-800-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Plex Mono"; font-weight: 400; src: url(assets/fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Plex Mono"; font-weight: 500; src: url(assets/fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Plex Mono"; font-weight: 600; src: url(assets/fonts/ibm-plex-mono-latin-600-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Plex Mono"; font-weight: 500; src: url(assets/fonts/ibm-plex-mono-latin-ext-500-normal.woff2) format("woff2"); unicode-range: U+20A6; }
+  @font-face { font-family: "Plex Mono"; font-weight: 600; src: url(assets/fonts/ibm-plex-mono-latin-ext-600-normal.woff2) format("woff2"); unicode-range: U+20A6; }
+
+  :root {
+    --paper: #F4F2EE;
+    --ink: #111111;
+    --blue: #0F68D8;
+  }
+  html, body { margin: 0; padding: 0; background: var(--paper); overflow: hidden; }
+  #frame { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--paper); }
+  #gl, #stage { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  text { font-kerning: normal; }
+  .display { font-family: "Figtree", sans-serif; font-weight: 800; }
+  .ui { font-family: "Plex Mono", monospace; }
+</style>
+</head>
+<body>
+<div id="frame">
+  <canvas id="gl" width="1080" height="1920"></canvas>
+  <svg id="stage" viewBox="0 0 1080 1920" width="1080" height="1920" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Land Republic mark, rebuilt as vector from the supplied 113x40 logo
+           (fitted to the original pixels, r = 0.965). Units are logo pixels;
+           hub centre at (18.21, 18.51). Replace with the official vector when supplied. -->
+      <g id="markShapes">
+        <polygon data-arm="0" points="18.210,15.845 22.795,9.192 18.210,2.538 13.625,9.192"/>
+        <polygon data-arm="1" points="20.454,17.074 28.499,17.352 31.623,9.933 23.579,9.655"/>
+        <polygon data-arm="2" points="20.728,19.378 26.424,25.952 34.962,24.295 29.267,17.721"/>
+        <polygon data-arm="3" points="18.210,21.172 21.106,24.506 21.106,34.397 15.314,34.397 15.314,24.506"/>
+        <polygon data-arm="4" points="15.693,19.378 7.154,17.721 1.458,24.295 9.997,25.952"/>
+        <polygon data-arm="5" points="15.966,17.074 12.842,9.655 4.797,9.933 7.921,17.352"/>
+      </g>
+      <filter id="whipBlur" x="-10%" y="-60%" width="120%" height="220%"><feGaussianBlur id="whipBlurK" stdDeviation="0 0"/></filter>
+      <filter id="waveBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="34"/></filter>
+      <filter id="holeBlur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="38"/></filter>
+      <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="160%">
+        <feDropShadow dx="0" dy="22" stdDeviation="30" flood-color="#0B1B33" flood-opacity="0.22"/>
+      </filter>
+      <filter id="pillShadow" x="-20%" y="-50%" width="140%" height="220%">
+        <feDropShadow dx="0" dy="14" stdDeviation="22" flood-color="#0B1B33" flood-opacity="0.20"/>
+      </filter>
+      <filter id="liftShadow" x="-40%" y="-40%" width="180%" height="180%">
+        <feDropShadow id="liftShadowK" dx="0" dy="0" stdDeviation="10" flood-color="#000" flood-opacity="0"/>
+      </filter>
+      <filter id="grain" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" stitchTiles="stitch"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0"/>
+      </filter>
+      <mask id="holeMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1080" height="1920">
+        <rect x="0" y="0" width="1080" height="1920" fill="#fff"/>
+        <path id="holePath" fill="#000" filter="url(#holeBlur)" d=""/>
+      </mask>
+      <mask id="dimMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1080" height="1920">
+        <rect x="0" y="0" width="1080" height="1920" fill="#fff"/>
+        <polygon id="dimHole" fill="#000" points=""/>
+      </mask>
+      <clipPath id="pillClip"><rect id="pillClipRect" x="0" y="0" width="0" height="0" rx="0"/></clipPath>
+      <clipPath id="hlClip"><rect id="hlClipRect" x="0" y="0" width="0" height="0"/></clipPath>
+      <clipPath id="landClip"><rect id="landClipRect" x="0" y="-200" width="1080" height="0"/></clipPath>
+      <clipPath id="repClip"><rect id="repClipRect" x="0" y="-200" width="1080" height="0"/></clipPath>
+      <clipPath id="oyoClip"><circle id="oyoClipCircle" cx="0" cy="0" r="0"/></clipPath>
+      <clipPath id="selClip"><rect id="selClipRect" x="0" y="0" width="0" height="0"/></clipPath>
+      <clipPath id="cardTitleClip"><rect id="cardTitleClipRect" x="0" y="0" width="900" height="0"/></clipPath>
+      <clipPath id="cardSubClip"><rect id="cardSubClipRect" x="0" y="0" width="900" height="0"/></clipPath>
+      <clipPath id="cardPriceClip"><rect id="cardPriceClipRect" x="0" y="0" width="900" height="0"/></clipPath>
+    </defs>
+
+    <!-- Scene A: paper + logo. Whips upward at the cut. -->
+    <g id="sceneA" filter="url(#whipBlur)">
+      <rect x="-20" y="-20" width="1120" height="1960" fill="#F4F2EE"/>
+      <rect x="0" y="0" width="1080" height="1920" filter="url(#grain)"/>
+      <g id="wordmark" class="display" fill="#111111">
+        <g clip-path="url(#landClip)"><text id="wmLand" font-size="17.226" x="41.475" y="18.405">Land</text></g>
+        <g clip-path="url(#repClip)"><text id="wmRep" font-size="17.226" x="41.475" y="34.913">Republic</text></g>
+      </g>
+    </g>
+
+    <!-- Scene B: search pill over the sky (WebGL underneath). -->
+    <g id="sceneB">
+      <g id="pill">
+        <rect id="pillRect" x="0" y="0" width="0" height="0" rx="0" fill="#FFFFFF" filter="url(#pillShadow)"/>
+        <g clip-path="url(#pillClip)">
+          <text id="query" class="ui" font-size="50" font-weight="500" fill="#111111"></text>
+          <rect id="queryCaret" x="0" y="0" width="3" height="58" fill="#0F68D8"/>
+        </g>
+      </g>
+      <g id="btn">
+        <circle id="btnCircle" cx="0" cy="0" r="66" fill="#0F68D8"/>
+        <path id="btnArrow" d="M-18,0 L16,0 M2,-15 L17,0 L2,15" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </g>
+
+    <!-- Scene C: blue flood, light wave, typed line. -->
+    <g id="sceneC">
+      <circle id="flood" cx="540" cy="1000" r="0" fill="#0F68D8"/>
+      <path id="wave" d="" fill="#F4F2EE" filter="url(#waveBlur)"/>
+    </g>
+
+    <!-- The mark lives above A, B and the flood so it can travel across the cut. -->
+    <g id="mark"><g id="markArms" fill="#0F68D8"></g></g>
+
+    <g id="cursor">
+      <path d="M0,0 L0,46 L11,35 L19,54 L27,50 L19,32 L34,32 Z" fill="#FFFFFF" stroke="#111111" stroke-width="3" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Scene D1: map. Masked open to reveal the land underneath. -->
+    <g id="sceneD" mask="url(#holeMask)">
+      <rect id="mapPaper" x="0" y="0" width="1080" height="1920" fill="#F4F2EE"/>
+      <rect id="mapGrain" x="0" y="0" width="1080" height="1920" filter="url(#grain)"/>
+      <g id="contours" fill="none" stroke="#BDB4A3" stroke-width="2.5"></g>
+      <g id="map">
+        <g id="states" fill="none" stroke="#C9C2B4" stroke-linejoin="round"></g>
+        <g clip-path="url(#oyoClip)"><path id="oyoFill" fill="#0F68D8" d=""/></g>
+        <path id="oyoEdge" fill="none" stroke="#0F68D8" d=""/>
+        <path id="country" fill="none" stroke="#111111" stroke-linejoin="round" d=""/>
+      </g>
+      <g id="pin">
+        <circle id="pinRing" cx="0" cy="0" r="0" fill="none" stroke="#111111" stroke-width="2"/>
+        <circle cx="0" cy="0" r="17" fill="#111111"/>
+        <circle cx="0" cy="0" r="7" fill="#F4F2EE"/>
+      </g>
+      <g id="pinLabel" class="ui">
+        <rect id="pinLabelBg" x="0" y="-33" width="0" height="64" rx="32" fill="#111111"/>
+        <text id="pinLabelText" x="0" y="12" font-size="35" font-weight="500" fill="#FFFFFF"></text>
+      </g>
+      <g id="title">
+        <rect id="hlRect" x="0" y="0" width="0" height="0" fill="#0F68D8"/>
+        <text id="titleText" class="ui" font-size="58" font-weight="500" fill="#111111" text-anchor="start"></text>
+        <g clip-path="url(#hlClip)"><text id="titleTextHi" class="ui" font-size="58" font-weight="500" fill="#FFFFFF"></text></g>
+        <rect id="titleCaret" x="0" y="0" width="4" height="66" fill="#0F68D8"/>
+      </g>
+    </g>
+
+    <!-- Scene D2/D3: survey overlay and property card over the land. -->
+    <g id="sceneE">
+      <rect id="dim" x="0" y="0" width="1080" height="1920" fill="#06152E" opacity="0" mask="url(#dimMask)"/>
+      <g id="survey" fill="none" stroke="#FFFFFF"></g>
+      <g id="selPlot" filter="url(#liftShadow)">
+        <g clip-path="url(#selClip)"><polygon id="selFill" fill="#0F68D8" fill-opacity="0.78" points=""/></g>
+        <polygon id="selEdge" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" points=""/>
+        <text id="selLabel" class="ui" font-size="34" font-weight="600" fill="#FFFFFF" text-anchor="middle"></text>
+      </g>
+      <path id="callout" d="" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+      <circle id="calloutDot" cx="0" cy="0" r="0" fill="#FFFFFF"/>
+      <g id="card">
+        <rect x="0" y="0" width="856" height="372" rx="40" fill="#FFFFFF" filter="url(#cardShadow)"/>
+        <g id="cardMark" fill="#0F68D8"></g>
+        <g clip-path="url(#cardTitleClip)"><text id="cardTitle" class="display" x="56" y="138" font-size="94" fill="#111111">Ariya Springs</text></g>
+        <g clip-path="url(#cardSubClip)"><text id="cardSub" x="58" y="200" font-family="Figtree" font-weight="600" font-size="42" fill="#5E5A53">Ibadan, Oyo State</text></g>
+        <line id="cardRule" x1="58" y1="246" x2="58" y2="246" stroke="#E4E0D8" stroke-width="2"/>
+        <g clip-path="url(#cardPriceClip)">
+          <text id="cardSize" class="ui" x="58" y="318" font-size="38" font-weight="500" fill="#5E5A53">500 SQM</text>
+          <text id="cardPrice" class="ui" x="800" y="320" font-size="44" font-weight="600" fill="#111111" text-anchor="end">FROM ₦2.5M</text>
+        </g>
+      </g>
+    </g>
+  </svg>
+</div>
+<script type="module" src="src/film.js"></script>
+</body>
+</html>
