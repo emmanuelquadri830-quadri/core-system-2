@@ -22,7 +22,7 @@ import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(ROOT, 'out');
-const FPS = 30, DURATION = 11.5, FRAMES = FPS * DURATION;   // frames 0..344, stops at 11.500 s
+const FPS = 30, DURATION = 24, FRAMES = FPS * DURATION;   // frames 0..719, stops at 24.000 s
 const WORKERS = 3;
 fs.mkdirSync(path.join(OUT, 'frames'), { recursive: true });
 

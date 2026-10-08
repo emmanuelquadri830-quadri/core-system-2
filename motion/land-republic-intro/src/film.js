@@ -4,7 +4,7 @@
 import { createGL } from './gl.js';
 
 const W = 1080, H = 1920, CX = 540, CY = 960;
-const DURATION = 11.5;
+const DURATION = 24.0;
 const NS = 'http://www.w3.org/2000/svg';
 
 // ------------------------------------------------------------------ helpers
@@ -287,7 +287,7 @@ const C0 = T.click + 0.02;
 // Camera path: the reference's fly-in (globe, region, horizon tilt, descent, title, oblique, neon),
 // compressed from 13 s to about 6 s and aimed at Ibadan.
 const camLogRange = monotone([[C0, Math.log(46000)], [T.regional, Math.log(2400)], [T.regional + 0.3, Math.log(1250)],
-  [T.horizon + 0.3, Math.log(600)], [T.title - 0.05, Math.log(200)], [T.oblique - 0.05, Math.log(95)], [T.neon - 0.1, Math.log(46)], [DURATION, Math.log(38)]]);
+  [T.horizon + 0.3, Math.log(600)], [T.title - 0.05, Math.log(200)], [T.oblique - 0.05, Math.log(95)], [T.neon - 0.1, Math.log(46)], [T.final + 0.5, Math.log(38)], [T.photo1, Math.log(6)]]);
 const camLon = monotone([[C0, -14], [T.regional, 3.4], [T.regional + 0.3, 3.85], [T.horizon + 0.3, 3.93], [T.title - 0.05, IBADAN[0]], [T.oblique - 0.05, 3.94], [T.neon - 0.1, 3.962], [DURATION, 3.97]]);
 const camLat = monotone([[C0, 4.0], [T.regional, 8.3], [T.regional + 0.3, 7.95], [T.horizon + 0.3, 7.5], [T.title - 0.05, IBADAN[1]], [T.oblique - 0.05, 7.385], [T.neon - 0.1, 7.402], [DURATION, 7.408]]);
 const camPitch = monotone([[C0, 0], [T.horizon - 0.25, 0], [T.horizon - 0.03, 66], [T.horizon + 0.13, 66], [T.horizon + 0.35, 0], [T.oblique - 0.05, 0], [T.neon - 0.15, 50], [DURATION, 54]]);
@@ -399,7 +399,7 @@ LABELS.forEach((L, i) => {
   L.path = path;
 });
 {
-  const cEnd = earthCam(DURATION - 0.3);
+  const cEnd = earthCam(T.final + 0.4);
   for (const L of LABELS) {
     const q = L.route.map(p => project(cEnd, p[0], p[1])).filter(Boolean);
     const a = q[0], b = q[Math.min(q.length - 1, 2)];
@@ -505,6 +505,67 @@ function worldOverlay(t, c) {
     set($('ringArc'), { d: toD(top) });
     set($('ringLabel'), { 'fill-opacity': clamp((t - (T.neon + 0.86)) / 0.1).toFixed(3) });
   }
+}
+
+// ------------------------------------------------------------------ the cinematic close
+// Real Land Republic estate photos, from The Monarch's Court, Epe (captioned as such on screen),
+// used as proof of delivery before the Ariya Springs offer.
+const SHOTS = [
+  { img: 'epe-aerial-wide', at: 'photo1', next: 'photo2', lines: ['VERIFIED', 'TITLES.'], focus: [0.50, 0.42], pan: -24 },
+  { img: 'epe-fenced', at: 'photo2', next: 'photo3', lines: ['FLEXIBLE', 'PAYMENT.'], focus: [0.55, 0.50], pan: 22 },
+  { img: 'epe-gate', at: 'photo3', next: 'photo4', lines: ['TRANSPARENT', 'PROCESS.'], focus: [0.62, 0.52], pan: -18 },
+  { img: 'epe-launch', at: 'photo4', next: 'offer', lines: ['SOLD', 'OUT.'], focus: [0.30, 0.56], pan: 20 },
+];
+const BAND = { y: 600, h: 640 };
+const PHOTO_W = 1998, PHOTO_H = 954;
+const bandScale = Math.max(W / PHOTO_W, BAND.h / PHOTO_H);
+const bgScale = Math.max(W / PHOTO_W, H / PHOTO_H);
+function svgImage(parent, href, w, h) {
+  const el = document.createElementNS(NS, 'image');
+  el.setAttribute('href', href);
+  el.setAttribute('width', w);
+  el.setAttribute('height', h);
+  el.setAttribute('preserveAspectRatio', 'none');
+  parent.appendChild(el);
+  return new Promise((res, rej) => { el.addEventListener('load', () => res(el)); el.addEventListener('error', rej); });
+}
+for (const sh of SHOTS) {
+  [sh.band, sh.bg] = await Promise.all([
+    svgImage($('photoBand'), `assets/photos/${sh.img}.jpg`, PHOTO_W, PHOTO_H),
+    svgImage($('photoBg'), `assets/photos/${sh.img}.jpg`, PHOTO_W, PHOTO_H),
+  ]);
+  // headline: one clipped line per row, sliding up out of its own baseline; the full stop is blue
+  sh.lineEls = sh.lines.map((txt, i) => {
+    const clipId = `hl_${sh.img}_${i}`;
+    const cp = document.createElementNS(NS, 'clipPath'); cp.setAttribute('id', clipId);
+    const r = document.createElementNS(NS, 'rect');
+    set(r, { x: 0, y: 1380 + i * 124 - 112, width: W, height: 128 });
+    cp.appendChild(r); $('stage').querySelector('defs').appendChild(cp);
+    const g = document.createElementNS(NS, 'g'); g.setAttribute('clip-path', `url(#${clipId})`);
+    const tx = document.createElementNS(NS, 'text');
+    set(tx, { x: 80, y: 1380 + i * 124 });
+    const body = txt.endsWith('.') ? txt.slice(0, -1) : txt;
+    tx.appendChild(document.createTextNode(body));
+    if (txt.endsWith('.')) { const dot = document.createElementNS(NS, 'tspan'); dot.setAttribute('fill', '#3B8BF2'); dot.textContent = '.'; tx.appendChild(dot); }
+    g.appendChild(tx); $('headline').appendChild(g);
+    return tx;
+  });
+}
+const CAPTION = "THE MONARCH'S COURT · EPE, LAGOS";
+$('captionText').textContent = CAPTION;
+const CAPTION_W = $('captionText').getComputedTextLength();
+const ctaArms = buildMark($('ctaArms'));
+const LOCK2 = { s: 7.4, cx: 540, cy: 760 };
+
+function shotState(sh, t) {
+  const t0 = T[sh.at], t1 = T[sh.next];
+  const enter = E.outExpo(prog(t, t0, t0 + 0.55));
+  let z = lerp(1.45, 1.0, enter);
+  z *= 1 + 0.12 * E.outCubic(prog(t, t0 + 0.75, t0 + 0.98)) + 0.04 * prog(t, t0 + 0.98, t1);   // punch on the mid beat
+  z *= 1 + 0.55 * E.inCubic(prog(t, t1 - 0.16, t1));                                                // push into the cut
+  const blur = 14 * (1 - prog(t, t0, t0 + 0.16)) + 16 * E.inCubic(prog(t, t1 - 0.12, t1));
+  const pan = sh.pan * E.inOutSine(prog(t, t0, t1));
+  return { z, blur, pan };
 }
 
 // ------------------------------------------------------------------ seek
@@ -721,7 +782,7 @@ function seek(t) {
   show($('reveal'), false);
 
   // ---------------- Scene W: the world transition (4.52-10.50)
-  const W_ON = t >= T.click + 0.02;
+  const W_ON = t >= T.click + 0.02 && t < T.photo1;
   const cam = W_ON ? earthCam(t) : null;
   show($('sceneW'), W_ON);
   if (W_ON) worldOverlay(t, cam);
@@ -783,6 +844,91 @@ function seek(t) {
   // Organic hole opens at the pin onto the land.
   const holeR = 2300 * E.inCubic(holeU) + 60 * E.outCubic(holeU);
   set($('holePath'), { d: holeU > 0 ? blob(ibS[0], ibS[1], holeR, t) : '' });
+
+  // ---------------- Scene P: real estate photos with punch-in and pull-out zooms (12.0-18.3)
+  const pOn = t >= T.photo1 - 0.001 && t < T.offer + 0.35;
+  show($('sceneP'), pOn);
+  if (pOn) {
+    let cur = SHOTS[0];
+    for (const sh of SHOTS) if (t >= T[sh.at]) cur = sh;
+    for (const sh of SHOTS) { show(sh.band, sh === cur); show(sh.bg, sh === cur); }
+    const st = shotState(cur, Math.min(t, T.offer));
+    const bw = PHOTO_W * bandScale, bh = PHOTO_H * bandScale;
+    const fx = cur.focus[0] * bw + (W - bw) / 2, fy = BAND.y + cur.focus[1] * bh + (BAND.h - bh) / 2;
+    set(cur.band, { transform: `translate(${(fx + st.pan).toFixed(2)} ${fy.toFixed(2)}) scale(${st.z.toFixed(5)}) translate(${(-fx).toFixed(2)} ${(-fy).toFixed(2)}) translate(${((W - bw) / 2).toFixed(2)} ${(BAND.y + (BAND.h - bh) / 2).toFixed(2)}) scale(${bandScale.toFixed(5)})` });
+    set($('photoBlurK'), { stdDeviation: st.blur.toFixed(2) });
+    const gw = PHOTO_W * bgScale;
+    set(cur.bg, { transform: `translate(${(W / 2).toFixed(1)} ${(H / 2).toFixed(1)}) scale(${(1 + 0.4 * (st.z - 1)).toFixed(4)}) translate(${(-W / 2).toFixed(1)} ${(-H / 2).toFixed(1)}) translate(${((W - gw) / 2).toFixed(1)} 0) scale(${bgScale.toFixed(5)})` });
+    // caption: these photos are The Monarch's Court, Epe, not Ariya Springs
+    const capU = E.outExpo(prog(t, T.photo1 + 0.3, T.photo1 + 0.65));
+    set($('captionBg'), { x: 32, y: BAND.y + BAND.h - 92, width: ((CAPTION_W + 52) * capU).toFixed(1) });
+    set($('captionText'), { x: 58, y: BAND.y + BAND.h - 49, 'fill-opacity': clamp((capU - 0.6) / 0.4).toFixed(3) });
+    // headlines slide up on the beat and leave just before the cut
+    for (const sh of SHOTS) {
+      const t0 = T[sh.at], t1 = T[sh.next];
+      sh.lineEls.forEach((el, i) => {
+        const inU = E.outExpo(prog(t, t0 + 0.2 + 0.08 * i, t0 + 0.55 + 0.08 * i));
+        const outU = E.inCubic(prog(t, t1 - 0.22 + 0.04 * i, t1 - 0.04 + 0.04 * i));
+        const dy = 130 * (1 - inU) - 130 * outU;
+        el.setAttribute('transform', `translate(0 ${dy.toFixed(1)})`);
+        el.style.display = sh === cur ? '' : 'none';
+      });
+    }
+    show($('soldTag'), false);
+    // white flash bridging each cut
+    let fl = 0.85 * (1 - prog(t, T.photo1, T.photo1 + 0.16));
+    for (const k of ['photo2', 'photo3', 'photo4']) fl = Math.max(fl, 0.35 * E.inCubic(prog(t, T[k] - 0.06, T[k])) * (t < T[k] ? 1 : 0), 0.35 * (1 - prog(t, T[k], T[k] + 0.12)) * (t >= T[k] ? 1 : 0));
+    set($('flash'), { opacity: fl.toFixed(3) });
+  }
+  // flash from the world dive into the first photo (flash is its own top layer)
+  if (t >= T.photo1 - 0.15 && t < T.photo1) set($('flash'), { opacity: (0.85 * E.inCubic(prog(t, T.photo1 - 0.15, T.photo1))).toFixed(3) });
+  else if (!pOn) set($('flash'), { opacity: 0 });
+
+  // ---------------- Scene O: the Ariya Springs offer on brand blue (18.0-20.3)
+  const oOn = t >= T.offer - 0.12 && t < T.cta + 0.35;
+  show($('sceneO'), oOn);
+  if (oOn) {
+    set($('offerWipe'), { r: (1400 * E.inOutCubic(prog(t, T.offer - 0.12, T.offer + 0.28))).toFixed(1) });
+    const up = (a, b, d) => d * (1 - E.outExpo(prog(t, a, b)));
+    const offerDrift = 1 + 0.03 * E.inOutSine(prog(t, T.offer + 0.3, T.cta));
+    set($('offerText'), { transform: `translate(540 920) scale(${offerDrift.toFixed(4)}) translate(-540 -920)` });
+    set($('offerKicker'), { y: (760 + up(T.offer + 0.15, T.offer + 0.5, 70)).toFixed(1) });
+    set($('offerTitle'), { y: (920 + up(T.offer + 0.25, T.offer + 0.62, 170)).toFixed(1) });
+    set($('offerPrice'), { y: (1040 + up(T.offer + 0.4, T.offer + 0.76, 90)).toFixed(1) });
+  }
+
+  // ---------------- Scene CTA: logo, line, button, URL (20.0-24.0)
+  const cOn = t >= T.cta - 0.12;
+  show($('sceneCTA'), cOn);
+  if (cOn) {
+    set($('ctaWipe'), { r: (1400 * E.inOutCubic(prog(t, T.cta - 0.12, T.cta + 0.28))).toFixed(1) });
+    // the mark assembles again, echoing the opening
+    const ls2 = LOCK2.s * (1 + 0.02 * E.inOutSine(prog(t, T.cta_settle, DURATION)));
+    const hub2 = [LOCK2.cx + (HUB[0] - LOCK.cx) * ls2, LOCK2.cy + (HUB[1] - LOCK.cy) * ls2];
+    const spin2 = -38 * (1 - E.outExpo(prog(t, T.cta + 0.05, T.cta_settle)));
+    const sc2 = ls2 * (0.92 + 0.08 * settle(prog(t, T.cta + 0.05, T.cta_settle + 0.2), 0.04, 0.7));
+    set($('ctaMark'), { transform: `translate(${hub2[0].toFixed(2)} ${hub2[1].toFixed(2)}) scale(${sc2.toFixed(4)}) rotate(${spin2.toFixed(2)}) translate(${-HUB[0]} ${-HUB[1]})` });
+    ARM_ORDER.forEach((i, k) => {
+      const u = E.outExpo(prog(t, T.cta + 0.05 + k * 0.03, T.cta_settle));
+      const off = (420 / ls2) * (1 - u);
+      ctaArms[i].setAttribute('transform', `translate(${(ARMS[i].dir[0] * off).toFixed(3)} ${(ARMS[i].dir[1] * off).toFixed(3)})`);
+    });
+    set($('ctaWordmark'), { transform: `translate(${(LOCK2.cx - LOCK.cx * ls2).toFixed(2)} ${(LOCK2.cy - LOCK.cy * ls2).toFixed(2)}) scale(${ls2.toFixed(4)})` });
+    set($('ctaLand'), { y: (18.405 + 19 * (1 - E.outExpo(prog(t, T.cta_settle - 0.05, T.cta_settle + 0.35)))).toFixed(3) });
+    set($('ctaRep'), { y: (34.913 + 21 * (1 - E.outExpo(prog(t, T.cta_settle + 0.03, T.cta_settle + 0.43)))).toFixed(3) });
+    set($('ctaLine'), { y: (1040 + 80 * (1 - E.outExpo(prog(t, T.cta + 0.75, T.cta + 1.1)))).toFixed(1) });
+    const pop = settle(prog(t, T.cta + 0.95, T.cta + 1.4), 0.06, 0.6);
+    const ctaPress = t < T.tap ? 1 - 0.06 * E.inQuad(prog(t, T.tap - 0.08, T.tap)) : lerp(0.94, 1, settle(prog(t, T.tap, T.tap + 0.25), 0.03, 0.5));
+    set($('ctaButton'), { transform: `translate(540 1220) scale(${(Math.max(0.001, pop) * ctaPress).toFixed(4)})` });
+    set($('ctaUrl'), { y: (1400 + 70 * (1 - E.outExpo(prog(t, T.cta + 1.2, T.cta + 1.55)))).toFixed(1) });
+    // a cursor taps the button on the beat, echoing the search
+    const cu3 = E.outCubic(prog(t, T.tap - 0.6, T.tap - 0.07));
+    const cx3 = lerp(1150, 660, cu3), cy3 = lerp(1700, 1242, cu3);
+    const exit3 = E.inCubic(prog(t, T.tap + 0.25, T.tap + 0.6));
+    const ck3 = t < T.tap ? 1 - 0.1 * E.inQuad(prog(t, T.tap - 0.08, T.tap)) : lerp(0.9, 1, prog(t, T.tap, T.tap + 0.2));
+    show($('ctaCursor'), t >= T.tap - 0.6 && exit3 < 1);
+    set($('ctaCursor'), { transform: `translate(${(cx3 + 200 * exit3).toFixed(1)} ${(cy3 + 500 * exit3).toFixed(1)}) scale(${(1.25 * ck3).toFixed(3)})` });
+  }
 
   // ---------------- GL plates
   let glState = null;

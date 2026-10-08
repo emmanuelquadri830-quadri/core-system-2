@@ -1,4 +1,4 @@
-"""Land Republic intro (0:00-0:11.5) score and SFX, synthesized from scratch.
+"""Land Republic film (0:00-0:24) score and SFX, synthesized from scratch.
 
 Writes audio/score.wav (48 kHz, 24-bit stereo, -14 LUFS integrated) and
 beats.json (onsets measured back out of the rendered mix, not the cue list).
@@ -15,7 +15,7 @@ import soundfile as sf
 from scipy.signal import butter, fftconvolve, sosfilt
 
 SR = 48000
-DUR = 11.5
+DUR = 24.0
 BPM = 120.0
 BEAT = 60.0 / BPM
 N = int(SR * DUR)
@@ -180,6 +180,32 @@ def detent(seed):
     return body * 0.5 + click
 
 
+def clap(seed):
+    n = int(0.25 * SR)
+    t = np.arange(n) / SR
+    env = np.zeros(n)
+    for k, d in enumerate((0.0, 0.009, 0.019)):
+        i = int(d * SR)
+        env[i:] += np.exp(-(t[: n - i]) / (0.006 if k < 2 else 0.11))
+    return bp(noise(n, seed), 900, 3200) * env
+
+
+def hat(seed, open_=False):
+    n = int((0.2 if open_ else 0.06) * SR)
+    t = np.arange(n) / SR
+    return hp(noise(n, seed), 7000) * np.exp(-t / (0.08 if open_ else 0.018))
+
+
+def impact(seed):
+    """Cinematic hit: deep boom plus a short noise crash."""
+    n = int(1.4 * SR)
+    t = np.arange(n) / SR
+    f = 36 + 80 * np.exp(-t / 0.05)
+    boom = np.sin(2 * math.pi * np.cumsum(f) / SR) * np.exp(-t / 0.45)
+    crash = bp(noise(n, seed), 2000, 9000) * np.exp(-t / 0.35) * 0.35
+    return boom + crash
+
+
 def whoosh(dur, seed, lo=250, hi=5200, peak=0.6):
     """Band of noise swept up then down; loudest at `peak` (0..1 of dur)."""
     n = int(dur * SR)
@@ -241,6 +267,15 @@ HITS = [
     (10.00, "neon"),       # Lagos-Ibadan Expressway lights up
     (10.25, "neon2"),      # road toward Ife lights up
     (11.00, "final"),
+    (12.00, "photo1"),     # dive into the first estate photo
+    (13.50, "photo2"),
+    (15.00, "photo3"),
+    (16.50, "photo4"),
+    (18.00, "offer"),      # Ariya Springs on brand blue
+    (20.00, "cta"),
+    (20.50, "cta_settle"), # the mark settles again
+    (22.50, "tap"),        # the cursor taps Secure your plot
+    (23.00, "end"),
 ]
 
 CHORDS = [  # (start, dur, bass midi, pad midis)
@@ -249,7 +284,12 @@ CHORDS = [  # (start, dur, bass midi, pad midis)
     (4.0, 2.0, 31, [55, 59, 62, 66, 69]),   # Gmaj9
     (6.0, 2.0, 40, [64, 67, 71, 74, 78]),   # Em9
     (8.0, 2.0, 31, [55, 59, 62, 66, 69]),   # Gmaj9 under the title
-    (10.0, 1.5, 38, [62, 66, 69, 73, 76]),  # Dmaj9, resolves under the neon
+    (10.0, 2.0, 38, [62, 66, 69, 73, 76]),  # Dmaj9 under the neon
+    (12.0, 2.0, 35, [59, 62, 66, 69, 73]),  # Bm9, the estate photos
+    (14.0, 2.0, 31, [55, 59, 62, 66, 69]),  # Gmaj9
+    (16.0, 2.0, 33, [57, 61, 64, 66, 71]),  # A6/9
+    (18.0, 2.0, 31, [55, 59, 62, 66, 73]),  # Gmaj9(#11), the offer lifts
+    (20.0, 4.0, 38, [62, 66, 69, 73, 76]),  # Dmaj9, the call to action resolves
 ]
 
 
@@ -283,6 +323,18 @@ def build():
     for tt in (6.0, 7.0, 8.0, 9.0, 10.0, 11.0):
         place(hits, kick(seed=int(tt * 10)), tt, 0.5 if tt in (8.0, 11.0) else 0.36)
 
+    # The cinematic close (12-20 s): a driving groove under the estate photos and the offer.
+    for k in range(16):
+        tt = 12.0 + k * BEAT
+        place(hits, kick(seed=200 + k), tt, 0.5 if k % 4 == 0 else 0.4)
+        if k % 2 == 1:
+            place(hits, clap(300 + k), tt, 0.32, pan=0.05)
+        place(sfx, hat(400 + k), tt + BEAT / 2, 0.16, pan=0.3)
+        chord = next(c for c in CHORDS if c[0] <= tt < c[0] + c[1])
+        for h in (0.0, 0.25):
+            place(music, lp(mallet(midi(chord[2] + 12), decay=0.12, ratio=1.0, index=0.6), 400), tt + h, 0.3)
+    place(sfx, hat(499, open_=True), 19.75, 0.18, pan=0.3)
+
     # Hits.
     place(hits, thock(), 0.50, 0.7)
     for k, m in enumerate((62, 69, 73, 76)):
@@ -310,6 +362,22 @@ def build():
     place(hits, zap(420, 1900, 0.45, 18), 10.25, 0.2, pan=0.3)                       # neon two
     for k, m in enumerate((62, 69, 73, 78, 81)):
         place(hits, mallet(midi(m + 12), decay=1.4), 11.00 + k * 0.015, 0.09, pan=-0.4 + k * 0.2)
+    # estate photos: an impact on every cut, a thump on every mid-beat punch-in
+    place(hits, impact(600), 12.00, 0.6)
+    for k, tt in enumerate((13.5, 15.0, 16.5)):
+        place(hits, impact(601 + k), tt, 0.42)
+    for k, tt in enumerate((12.75, 14.25, 15.75, 17.25)):
+        place(hits, kick(f0=140, f1=55, decay=0.18, click=0.3, seed=610 + k), tt, 0.32)
+    place(hits, impact(620), 18.00, 0.55)                                           # the offer
+    for k, m in enumerate((67, 71, 74, 78, 85)):
+        place(hits, mallet(midi(m + 12), decay=1.0), 18.00 + k * 0.012, 0.08, pan=-0.4 + k * 0.2)
+    place(hits, kick(f0=70, f1=32, decay=0.7, click=0.1, seed=630), 20.00, 0.45)   # call to action
+    place(hits, thock(seed=631), 20.50, 0.6)                                        # the mark settles
+    for k, m in enumerate((62, 69, 73, 76)):
+        place(hits, mallet(midi(m + 12), decay=0.9), 20.50 + k * 0.012, 0.1, pan=-0.3 + k * 0.2)
+    place(hits, ui_click(seed=632), 22.50, 0.5)                                    # Secure your plot
+    for k, m in enumerate((62, 69, 73, 78, 81, 86)):
+        place(hits, mallet(midi(m + 12), decay=1.6), 23.00 + k * 0.015, 0.09, pan=-0.5 + k * 0.2)
 
     # SFX layer (texture, not on the grid by design: typing, sweeps).
     rnd = mulberry32(55)
@@ -349,6 +417,23 @@ def build():
         place(sfx, tick(960 + k, 0.8), tt, 0.16, pan=(k - 1) * 0.4)
     place(sfx, whoosh(0.4, 51, lo=600, hi=5000, peak=0.5), 10.62, 0.1)  # junction ring draws
 
+    # The close.
+    place(sfx, riser(0.5, 53, 200, 2600), 11.50, 0.16)                  # dive into the junction
+    place(sfx, whoosh(0.45, 54, lo=150, hi=6000, peak=0.9), 11.58, 0.36)
+    for k, tt in enumerate((13.5, 15.0, 16.5, 18.0)):                   # zoom pushes into each cut
+        place(sfx, whoosh(0.32, 55 + k, lo=300, hi=7000, peak=0.92), tt - 0.3, 0.3, pan=(k % 2) * 0.4 - 0.2)
+    for k, tt in enumerate((12.0, 13.5, 15.0, 16.5)):                   # headlines pop in
+        place(sfx, tick(980 + k, 1.0), tt + 0.22, 0.18, pan=-0.2)
+        place(sfx, tick(990 + k, 1.0), tt + 0.30, 0.16, pan=-0.2)
+    place(sfx, shimmer(1.2, 60, base=1320), 18.02, 0.05, pan=0.1)
+    for k, tt in enumerate((18.15, 18.25, 18.4)):                      # offer lines
+        place(sfx, tick(1000 + k, 0.9), tt, 0.16)
+    place(sfx, whoosh(0.4, 61, lo=200, hi=4000, peak=0.5), 19.82, 0.26) # paper wipe to the close
+    place(sfx, whoosh(0.5, 62, peak=0.85), 20.0, 0.24)                  # arms fly in again
+    place(sfx, tick(1010, 0.9), 20.78, 0.14)                           # line
+    place(sfx, pop(seed=1011), 20.98, 0.2)                             # button
+    place(sfx, tick(1012, 0.9), 21.22, 0.14)                           # URL
+
     ir = reverb_ir()
     def verb(x, mix):
         w = np.stack([fftconvolve(x[:, c], ir[:, c])[:N] for c in range(2)], 1)
@@ -374,8 +459,8 @@ def build():
     lufs2 = meter.integrated_loudness(mix)
     mix *= 10 ** ((-14.0 - lufs2) / 20)
 
-    # Last 40 ms: short fade so the hard stop at 9.000 s does not click.
-    f = int(0.04 * SR)
+    # Last 0.6 s: fade out under the final chord.
+    f = int(0.6 * SR)
     mix[-f:] *= np.linspace(1, 0, f)[:, None] ** 2
     return mix, hits
 
