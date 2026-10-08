@@ -8,7 +8,8 @@
     "capture": "node tools/capture.mjs",
     "score": "node audio/score.mjs && node audio/measure.mjs && node audio/sfx.mjs",
     "sheet": "node tools/contact.mjs",
-    "render": "node render.mjs"
+    "render": "node render.mjs",
+    "remix:audio": "node remix/audio.mjs"
   },
   "dependencies": {
     "playwright": "1.56.1"

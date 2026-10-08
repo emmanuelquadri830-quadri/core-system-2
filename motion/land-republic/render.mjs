@@ -1,6 +1,7 @@
 // node render.mjs --ar 16x9 [--fps 30] [--blur 4] [--shutter 0.5] [--from 0] [--to 20]
 //                 [--workers 3] [--crf 16] [--out out/land-republic-16x9.mp4]
 //                 [--film location]   render the 15 s location film instead
+//                 [--film remix]      render the remix of the first film (remix/)
 //
 // Frames come from window.seek(t) in headless Chromium. With --blur N each
 // output frame averages N sub-frames spread across a centred shutter
@@ -28,9 +29,9 @@ const FROM = +(args.from || 0);
 const TO = +(args.to || (args.film === 'location' ? 15 : 20));
 const WORKERS = +(args.workers || Math.max(1, Math.min(4, os.cpus().length - 1)));
 const CRF = +(args.crf || 16);
-const FILM = args.film === 'location' ? 'location' : 'film';
-const OUT = path.resolve(ROOT, args.out || (FILM === 'location' ? `out/land-republic-location-${AR}.mp4` : `out/land-republic-${AR}.mp4`));
-const AUDIO = path.join(ROOT, 'build', 'audio', FILM === 'location' ? 'location-mix.wav' : 'mix.wav');
+const FILM = ['location', 'remix'].includes(args.film) ? args.film : 'film';
+const OUT = path.resolve(ROOT, args.out || (FILM === 'film' ? `out/land-republic-${AR}.mp4` : `out/land-republic-${FILM}-${AR}.mp4`));
+const AUDIO = path.join(ROOT, 'build', 'audio', FILM === 'film' ? 'mix.wav' : `${FILM}-mix.wav`);
 const SIZES = { '16x9': [1920, 1080], '1x1': [1080, 1080], '9x16': [1080, 1920] };
 const [W, H] = SIZES[AR];
 

@@ -1,18 +1,23 @@
 """Draws the mix as a spectrogram with the measured beat grid and every cue
-on top, so sync can be checked by eye. Usage: python3 -I tools/audiomap.py ROOT OUT.png"""
+on top, so sync can be checked by eye.
+Usage: python3 -I tools/audiomap.py ROOT OUT.png [PREFIX]   (PREFIX remix- for the remix)"""
 import json, sys, struct
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 root, out = sys.argv[1], sys.argv[2]
-raw = open(f"{root}/build/audio/mix.wav", "rb").read()
+prefix = sys.argv[3] if len(sys.argv) > 3 else ""
+raw = open(f"{root}/build/audio/{prefix}mix.wav", "rb").read()
 # float32 stereo, data chunk located by scan
 i = raw.index(b"data")
 n = struct.unpack("<I", raw[i + 4:i + 8])[0]
 x = np.frombuffer(raw[i + 8:i + 8 + n], dtype="<f4").reshape(-1, 2).mean(axis=1)
 sr = 48000
 grid = json.load(open(f"{root}/beats.json"))
-cues = json.load(open(f"{root}/build/audio/cues.json"))
+cues = json.load(open(f"{root}/build/audio/{prefix}cues.json"))
+# the remix file also lists the pin's flights; draw each landing as a cue
+if isinstance(cues, dict):
+    cues = cues["cues"] + [{"t": p["land"], "kind": "pin>" + p["to"]} for p in cues["pin"]]
 
 W, H = 2400, 520
 spec_h = 300
@@ -57,11 +62,11 @@ try:
     f = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)
 except Exception:
     f = ImageFont.load_default()
-colors = {"click": (255, 210, 60), "slam": (255, 90, 90), "slamBig": (255, 60, 60), "impact": (255, 40, 120),
+colors = {"pin": (60, 140, 255), "click": (255, 210, 60), "slam": (255, 90, 90), "slamBig": (255, 60, 60), "impact": (255, 40, 120),
           "pop": (90, 220, 255), "whoosh": (160, 255, 160), "whooshIn": (160, 255, 160)}
 for j, c in enumerate(cues):
     t = c["t"]
-    col = colors.get(c["kind"], (200, 160, 255))
+    col = colors.get(c["kind"].split(">")[0], (200, 160, 255))
     y = spec_h + 150 + (j % 4) * 18
     d.line([(px(t), spec_h + 140), (px(t), y)], fill=col, width=2)
     d.text((px(t) + 3, y - 2), c["kind"], fill=col, font=f)

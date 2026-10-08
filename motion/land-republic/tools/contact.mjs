@@ -21,8 +21,8 @@ const args = Object.fromEntries(
 );
 const MODE = args.mode || (args.times ? 'times' : 'beats');
 const OFFSET = +(args.offset ?? 0.1);
-const FILM = args.film === 'location' ? 'location' : 'film';
-const { SECTIONS, BEATS } = await import(FILM === 'location' ? '../location/timeline.mjs' : '../timeline.mjs');
+const FILM = ['location', 'remix'].includes(args.film) ? args.film : 'film';
+const { SECTIONS, BEATS } = await import(FILM === 'film' ? '../timeline.mjs' : `../${FILM}/timeline.mjs`);
 const grid = JSON.parse(fs.readFileSync(path.join(ROOT, FILM === 'location' ? 'location/beats.json' : 'beats.json'), 'utf8'));
 const T = (b) => grid.offset + b * grid.period;
 const SIZES = { '16x9': [1920, 1080], '1x1': [1080, 1080], '9x16': [1080, 1920] };
@@ -60,7 +60,7 @@ if (MODE === 'beats' || MODE === 'times') {
   const files = await grab(ar, times, MODE);
   const cols = ar === '16x9' ? 5 : ar === '1x1' ? 6 : 8;
   const tw = ar === '16x9' ? 384 : ar === '1x1' ? 300 : 216;
-  name = `${FILM === 'location' ? 'location-' : ''}${MODE}-${ar}`;
+  name = `${FILM === 'film' ? '' : FILM + '-'}${MODE}-${ar}`;
   html = `<div class="grid" style="grid-template-columns:repeat(${cols},${tw}px)">${files
     .map((f, i) => {
       const t = times[i];
@@ -81,7 +81,7 @@ if (MODE === 'beats' || MODE === 'times') {
       .map((ar) => `<img src="file://${shots[ar][i]}" style="height:${h}px">`)
       .join('')}</div>`);
   });
-  name = FILM === 'location' ? 'location-story' : 'story';
+  name = FILM === 'film' ? 'story' : `${FILM}-story`;
   html = rows.join('');
 }
 
