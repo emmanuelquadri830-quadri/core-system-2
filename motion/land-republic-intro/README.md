@@ -2,6 +2,15 @@
 
 A 1080×1920 (9:16) 30 fps intro for Instagram and TikTok. It runs brand, then location, then land, then property, and stops at 9.000 s.
 
+## Sequence (hits measured from the score)
+
+| Time | Beat |
+|---|---|
+| 0.00–2.00 | The mark assembles (settles on 0.50), the wordmark slides in (1.00), and brand blue floods out of the mark (2.00) |
+| 2.00–3.00 | The reference's "LOOKING FOR" beat: the field cools to slate and warm charcoal, a soft light hump rises, "LOOKING FOR" and "LAND" type in as word bursts (2.25, 2.50) over a soft wavy thread, and the selection steps back over LAND (2.75) |
+| 3.00–5.00 | Whip into the sky (3.00), the search pill lands (3.25), "land for sale in Ibadan" types, the pill collapses into the button, the click lands on 4.50, and the results open from the button |
+| 5.00–9.00 | Map of Nigeria (5.00), Oyo fills (5.50), pin on Ibadan with IBADAN selected (6.00), dive into the land (6.50), survey lines, the 500 sqm plot (7.50), the Ariya Springs card (8.00) |
+
 ## Run it
 
 ```
@@ -31,6 +40,7 @@ The score and SFX are synthesized in `audio/score.py` at 120 BPM: a pad, a pulse
 |---|---|
 | Land Republic mark | Rebuilt as vector from the supplied 113×40 PNG (pixel correlation 0.965). Replace it with the official vector when available. |
 | Wordmark typeface | Figtree 800. This is the closest of 11 candidates measured against the logo pixels (r = 0.93), not a confirmed brand font. |
+| "LOOKING FOR" typeface | Figtree 400. It is tied with Inter for closest to the reference's grotesk, and it keeps the film to two type families. |
 | Brand blue `#0F68D8`, ink `#111111` | Sampled from the supplied logo. |
 | Nigeria map, Oyo State, Ibadan position | Natural Earth 1:10m, public domain. 7.38°N, 3.93°E is Ibadan city, not the estate. |
 | "Ariya Springs", "Ibadan, Oyo State", "500 SQM", "FROM ₦2.5M" | From Land Republic's own blog ("₦2,500,000 per 500sqm"). Confirm before publishing. |

@@ -195,11 +195,11 @@ def reverb_ir(seconds=1.6, seed=9):
 HITS = [
     (0.50, "mark_settle"),
     (1.00, "wordmark"),
-    (2.00, "whip"),
-    (2.25, "pill_land"),
-    (3.50, "click"),
-    (4.00, "flood"),
-    (4.75, "highlight"),
+    (2.00, "flood"),       # brand blue floods out of the mark
+    (2.75, "highlight"),   # LAND is highlighted
+    (3.00, "whip"),        # paper whips up into the sky
+    (3.25, "pill_land"),
+    (4.50, "click"),
     (5.00, "map"),
     (5.50, "oyo"),
     (6.00, "pin"),
@@ -252,11 +252,12 @@ def build():
     for k, m in enumerate((62, 69, 73, 76)):
         place(hits, mallet(midi(m + 12), decay=0.9), 0.50 + k * 0.012, 0.11, pan=-0.3 + k * 0.2)
     place(hits, mallet(midi(81), decay=0.6), 1.00, 0.12, pan=0.25)
-    place(hits, kick(f0=90, f1=40, click=0.1, seed=12), 2.00, 0.45)
-    place(hits, pop(), 2.25, 0.22)
-    place(hits, ui_click(), 3.50, 0.5)
-    place(hits, kick(f0=70, f1=36, decay=0.5, click=0.0, seed=13), 3.75, 0.3)
-    place(hits, mallet(midi(86), decay=0.35, ratio=5.0, index=1.0), 4.75, 0.09, pan=0.3)
+    place(hits, kick(f0=80, f1=38, decay=0.45, click=0.1, seed=12), 2.00, 0.5)      # flood
+    place(hits, mallet(midi(86), decay=0.35, ratio=5.0, index=1.0), 2.75, 0.1, pan=0.3)   # LAND
+    place(hits, mallet(midi(78), decay=0.5), 2.75, 0.06, pan=-0.2)
+    place(hits, kick(f0=95, f1=42, click=0.15, seed=14), 3.00, 0.42)                # whip
+    place(hits, pop(), 3.25, 0.22)
+    place(hits, ui_click(), 4.50, 0.5)
     for k, m in enumerate((74, 78, 81)):
         place(hits, mallet(midi(m), decay=1.1), 5.00 + k * 0.01, 0.1, pan=-0.2 + k * 0.2)
     place(hits, mallet(midi(79), decay=0.7), 5.50, 0.1, pan=-0.3)
@@ -268,24 +269,31 @@ def build():
         place(hits, mallet(midi(m + 12), decay=1.4), 8.00 + k * 0.015, 0.09, pan=-0.4 + k * 0.2)
 
     # SFX layer (texture, not on the grid by design: typing, sweeps).
-    place(sfx, whoosh(0.55, 31, peak=0.85), 0.00, 0.28)          # arms fly in
-    place(sfx, riser(0.5, 32), 1.50, 0.12)                       # into the whip
-    place(sfx, whoosh(0.4, 33, peak=0.45), 1.82, 0.4)            # whip
     rnd = mulberry32(55)
-    for k in range(23):                                          # pill typing
-        place(sfx, tick(500 + k, 0.8), 2.40 + k * 0.02 + rnd() * 0.004, 0.16, pan=0.1)
-    place(sfx, whoosh(0.3, 34, lo=400, peak=0.55), 2.98, 0.16)   # pill collapses into the button
-    place(sfx, whoosh(0.6, 35, lo=120, hi=1800, peak=0.5), 3.50, 0.3)   # blue flood
-    place(sfx, whoosh(0.7, 36, lo=200, hi=3000, peak=0.55), 4.00, 0.22)  # light wave
-    for k in range(17):                                          # typed line
-        place(sfx, tick(700 + k, 1.0), 4.38 + k * 0.019 + rnd() * 0.004, 0.18, pan=-0.1)
-    place(sfx, riser(0.5, 37, 300, 2400), 4.50, 0.1)
+    place(sfx, whoosh(0.55, 31, peak=0.85), 0.00, 0.28)                 # arms fly in
+    place(sfx, riser(0.5, 32), 1.50, 0.12)                              # into the flood
+    place(sfx, whoosh(0.45, 35, lo=120, hi=1800, peak=0.5), 1.78, 0.3)  # blue floods out of the mark
+    place(sfx, whoosh(0.6, 36, lo=200, hi=3000, peak=0.55), 2.06, 0.22) # light wave
+    for k in range(4):                                                  # LOOKING FOR (word burst)
+        place(sfx, tick(700 + k, 1.0), 2.25 + k * 0.018, 0.2, pan=-0.1)
+    for k in range(3):                                                  # LAND (word burst)
+        place(sfx, tick(720 + k, 1.0), 2.50 + k * 0.018, 0.2, pan=-0.1)
+    for k in range(4):                                                  # selection steps back over LAND
+        place(sfx, tick(740 + k, 0.6), 2.69 + k * 0.04, 0.1, pan=0.2)
+    place(sfx, riser(0.45, 37, 300, 2400), 2.55, 0.1)                   # into the whip
+    place(sfx, whoosh(0.4, 33, peak=0.45), 2.82, 0.4)                   # whip to the sky
+    for k in range(23):                                                 # pill typing
+        place(sfx, tick(500 + k, 0.8), 3.35 + k * 0.02 + rnd() * 0.004, 0.16, pan=0.1)
+    place(sfx, whoosh(0.3, 34, lo=400, peak=0.55), 3.94, 0.16)          # pill collapses into the button
+    place(sfx, whoosh(0.5, 42, lo=200, hi=2600, peak=0.45), 4.52, 0.26) # results open from the button
+    for k in range(17):                                                 # map title
+        place(sfx, tick(800 + k, 0.9), 5.02 + k * 0.018 + rnd() * 0.004, 0.14, pan=0.1)
     place(sfx, whoosh(1.0, 38, lo=150, hi=4000, peak=0.5), 5.62, 0.15)  # dive toward Ibadan
     place(sfx, whoosh(0.6, 39, lo=180, hi=2600, peak=0.35), 6.30, 0.3)  # into the land
-    for k in range(8):                                           # survey lines
+    for k in range(8):                                                  # survey lines
         place(sfx, tick(900 + k, 0.7), 6.875 + k * 0.0625, 0.14, pan=(k % 2) * 0.6 - 0.3)
     place(sfx, whoosh(0.35, 40, lo=600, hi=6000, peak=0.6), 7.30, 0.12)
-    place(sfx, whoosh(0.4, 41, lo=300, hi=3500, peak=0.6), 7.62, 0.16)   # card slides up
+    place(sfx, whoosh(0.4, 41, lo=300, hi=3500, peak=0.6), 7.62, 0.16)  # card slides up
 
     ir = reverb_ir()
     def verb(x, mix):

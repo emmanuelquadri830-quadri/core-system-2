@@ -5,6 +5,7 @@
 <title>Land Republic Intro</title>
 <meta name="viewport" content="width=1080">
 <style>
+  @font-face { font-family: "Figtree"; font-weight: 400; src: url(assets/fonts/figtree-latin-400-normal.woff2) format("woff2"); }
   @font-face { font-family: "Figtree"; font-weight: 600; src: url(assets/fonts/figtree-latin-600-normal.woff2) format("woff2"); }
   @font-face { font-family: "Figtree"; font-weight: 800; src: url(assets/fonts/figtree-latin-800-normal.woff2) format("woff2"); }
   @font-face { font-family: "Plex Mono"; font-weight: 400; src: url(assets/fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2"); }
@@ -44,6 +45,13 @@
       </g>
       <filter id="whipBlur" x="-10%" y="-60%" width="120%" height="220%"><feGaussianBlur id="whipBlurK" stdDeviation="0 0"/></filter>
       <filter id="waveBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="34"/></filter>
+      <filter id="waveBlurL" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="95"/></filter>
+      <filter id="threadBlur" x="-5%" y="-50%" width="110%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+      <filter id="threadBlurS" x="-5%" y="-50%" width="110%" height="200%"><feGaussianBlur stdDeviation="2.5"/></filter>
+      <mask id="threadMask" maskUnits="userSpaceOnUse" x="-100" y="-100" width="1280" height="2120">
+        <path id="threadMaskWave" d="" fill="#fff" filter="url(#waveBlurL)"/>
+        <rect id="threadMaskFull" x="-100" y="-100" width="1280" height="2120" fill="#fff"/>
+      </mask>
       <filter id="holeBlur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="38"/></filter>
       <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="160%">
         <feDropShadow dx="0" dy="22" stdDeviation="30" flood-color="#0B1B33" flood-opacity="0.22"/>
@@ -77,13 +85,33 @@
       <clipPath id="cardPriceClip"><rect id="cardPriceClipRect" x="0" y="0" width="900" height="0"/></clipPath>
     </defs>
 
-    <!-- Scene A: paper + logo. Whips upward at the cut. -->
-    <g id="sceneA" filter="url(#whipBlur)">
+    <!-- Scene A: paper + logo. The blue flood from the mark covers it. -->
+    <g id="sceneA">
       <rect x="-20" y="-20" width="1120" height="1960" fill="#F4F2EE"/>
       <rect x="0" y="0" width="1080" height="1920" filter="url(#grain)"/>
       <g id="wordmark" class="display" fill="#111111">
         <g clip-path="url(#landClip)"><text id="wmLand" font-size="17.226" x="41.475" y="18.405">Land</text></g>
         <g clip-path="url(#repClip)"><text id="wmRep" font-size="17.226" x="41.475" y="34.913">Republic</text></g>
+      </g>
+      <g id="markA"><g id="markArmsA" fill="#0F68D8"></g></g>
+    </g>
+
+    <!-- Scene L: the reference's "LOOKING FOR" beat. Colour field, a soft light hump
+         rising, word-burst typing with a blue caret, a soft wavy thread behind the line,
+         and a text selection stepping back over the keyword. Whips up at the cut. -->
+    <g id="sceneL" filter="url(#whipBlur)">
+      <circle id="flood" cx="540" cy="960" r="0" fill="#0F68D8"/>
+      <path id="wave" d="" fill="#D8D4CD" filter="url(#waveBlurL)"/>
+      <rect id="paperL" x="-20" y="-20" width="1120" height="1960" fill="#D8D4CD"/>
+      <g id="thread" mask="url(#threadMask)" fill="none" stroke-linecap="round">
+        <path id="threadShadow" d="" stroke="#857E73" stroke-width="18" opacity="0.5" filter="url(#threadBlur)"/>
+        <path id="threadShadow2" d="" stroke="#857E73" stroke-width="14" opacity="0.38" filter="url(#threadBlur)"/>
+        <path id="threadLight" d="" stroke="#F1EDE6" stroke-width="6" opacity="0.75" filter="url(#threadBlurS)"/>
+      </g>
+      <g id="look">
+        <rect id="lookSel" x="0" y="0" width="0" height="0" fill="#7BACEA"/>
+        <text id="lookText" font-family="Figtree" font-weight="400" font-size="88" fill="#2C281E"></text>
+        <rect id="lookCaret" x="0" y="0" width="5" height="84" fill="#0F68D8"/>
       </g>
     </g>
 
@@ -100,16 +128,12 @@
         <circle id="btnCircle" cx="0" cy="0" r="66" fill="#0F68D8"/>
         <path id="btnArrow" d="M-18,0 L16,0 M2,-15 L17,0 L2,15" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
       </g>
+      <!-- second instance of the mark: the pill's icon, then the button face -->
+      <g id="mark"><g id="markArms" fill="#0F68D8"></g></g>
     </g>
 
-    <!-- Scene C: blue flood, light wave, typed line. -->
-    <g id="sceneC">
-      <circle id="flood" cx="540" cy="1000" r="0" fill="#0F68D8"/>
-      <path id="wave" d="" fill="#F4F2EE" filter="url(#waveBlur)"/>
-    </g>
-
-    <!-- The mark lives above A, B and the flood so it can travel across the cut. -->
-    <g id="mark"><g id="markArms" fill="#0F68D8"></g></g>
+    <!-- The click opens the results: paper grows out of the button. -->
+    <circle id="reveal" cx="540" cy="1010" r="0" fill="#F4F2EE"/>
 
     <g id="cursor">
       <path d="M0,0 L0,46 L11,35 L19,54 L27,50 L19,32 L34,32 Z" fill="#FFFFFF" stroke="#111111" stroke-width="3" stroke-linejoin="round"/>
@@ -119,7 +143,6 @@
     <g id="sceneD" mask="url(#holeMask)">
       <rect id="mapPaper" x="0" y="0" width="1080" height="1920" fill="#F4F2EE"/>
       <rect id="mapGrain" x="0" y="0" width="1080" height="1920" filter="url(#grain)"/>
-      <g id="contours" fill="none" stroke="#BDB4A3" stroke-width="2.5"></g>
       <g id="map">
         <g id="states" fill="none" stroke="#C9C2B4" stroke-linejoin="round"></g>
         <g clip-path="url(#oyoClip)"><path id="oyoFill" fill="#0F68D8" d=""/></g>
@@ -136,9 +159,8 @@
         <text id="pinLabelText" x="0" y="13" font-size="38" font-weight="500" fill="#FFFFFF"></text>
       </g>
       <g id="title">
-        <rect id="hlRect" x="0" y="0" width="0" height="0" fill="#0F68D8"/>
+        <rect id="hlRect" x="0" y="0" width="0" height="0" fill="#7BACEA"/>
         <text id="titleText" class="ui" font-size="58" font-weight="500" fill="#111111" text-anchor="start"></text>
-        <g clip-path="url(#hlClip)"><text id="titleTextHi" class="ui" font-size="58" font-weight="500" fill="#FFFFFF"></text></g>
         <rect id="titleCaret" x="0" y="0" width="4" height="66" fill="#0F68D8"/>
       </g>
     </g>

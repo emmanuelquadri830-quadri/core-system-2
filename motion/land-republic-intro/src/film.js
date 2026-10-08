@@ -86,6 +86,7 @@ function buildMark(parent) {
   });
 }
 const markArms = buildMark($('markArms'));
+const markArmsA = buildMark($('markArmsA'));
 const cardArms = buildMark($('cardMark'));
 const ARM_ORDER = [0, 1, 5, 2, 4, 3];   // clockwise from the top, stem last
 
@@ -115,14 +116,24 @@ function typeChars(spans, t, t0, step) {
 }
 
 const QUERY = 'land for sale in Ibadan';
+const LOOK = 'LOOKING FOR LAND';
+const LOOK_KEY = LOOK.indexOf('LAND');
+// word bursts, as the reference types: [first char, last char + 1, measured hit]
+const LOOK_BURSTS = [[0, 11], [12, 16]];
 const TITLE = 'IBADAN, OYO STATE';
 const PINTXT = '7.38°N, 3.93°E';
 const qSpans = buildTyping($('query'), QUERY);
+const lSpans = buildTyping($('lookText'), LOOK);
 const tSpans = buildTyping($('titleText'), TITLE);
-$('titleTextHi').textContent = TITLE;
 const pSpans = buildTyping($('pinLabelText'), PINTXT);
 const QW = $('query').getComputedTextLength() / QUERY.length;
 const TW = $('titleText').getComputedTextLength() / TITLE.length;
+// Size the line to 80% of the frame width (the reference is smaller, but this is a phone).
+const LOOK_SIZE = 88 * 864 / $('lookText').getComputedTextLength();
+$('lookText').setAttribute('font-size', LOOK_SIZE.toFixed(2));
+const LOOK_W = $('lookText').getComputedTextLength();
+const lookPrefix = k => (k <= 0 ? 0 : $('lookText').getSubStringLength(0, k));
+const LOOK_X = [...Array(LOOK.length + 1).keys()].map(lookPrefix);
 const PW = $('pinLabelText').getComputedTextLength() / PINTXT.length;
 
 // ------------------------------------------------------------------ map
@@ -147,18 +158,13 @@ const MAP_SCREEN = [CX, 1010];
 const Z0 = 880 / (NG.x1 - NG.x0);
 const IB = GEO.ibadan;
 
-// ------------------------------------------------------------------ contours
-const contourEls = [0, 1, 2].map(i => {
-  const el = document.createElementNS(NS, 'path');
-  set(el, { pathLength: 1, 'stroke-dasharray': '1 1', opacity: [0.9, 0.6, 0.45][i] });
-  $('contours').appendChild(el);
-  return el;
-});
-function contourPath(y0, ph, amp) {
+// ------------------------------------------------------------------ thread
+// The reference's soft wavy thread behind the typed line.
+function threadPath(y0, ph, a1 = 58, a2 = 22) {
   let d = '';
-  for (let x = -40; x <= W + 40; x += 30) {
-    const y = y0 + amp * Math.sin(x * 0.0062 + ph) + amp * 0.4 * Math.sin(x * 0.017 + ph * 1.9);
-    d += (x === -40 ? 'M' : 'L') + x + ',' + y.toFixed(1);
+  for (let x = -60; x <= W + 60; x += 24) {
+    const y = y0 + a1 * Math.sin((x / 980) * Math.PI * 2 + ph) + a2 * Math.sin((x / 410) * Math.PI * 2 + ph * 1.7);
+    d += (x === -60 ? 'M' : 'L') + x + ',' + y.toFixed(1);
   }
   return d;
 }
@@ -232,10 +238,7 @@ function seek(t) {
   t = clamp(t, 0, DURATION);
 
   // ---------------- Scene A: the mark assembles, then the lockup forms (0.00-2.00)
-  const whipU = prog(t, 1.84, 2.02);
-  show($('sceneA'), t < 2.03);
-  set($('sceneA'), { transform: `translate(0 ${(-2050 * E.inCubic(whipU)).toFixed(1)})` });
-  set($('whipBlurK'), { stdDeviation: `0 ${(110 * E.inCubic(whipU)).toFixed(1)}` });
+  show($('sceneA'), t < T.flood + 0.1);
 
   // Mark scale with a small overshoot that peaks on the settle hit.
   const S0 = 12;
@@ -243,18 +246,18 @@ function seek(t) {
   const moveU = E.inOutCubic(prog(t, 0.66, 1.16));
   const drift = 1 + 0.03 * E.inOutSine(prog(t, 1.1, 2.0));
   const LH = lockHub();
-  let hub = [lerp(CX, LH[0], moveU), lerp(CY, LH[1], moveU)];
-  let S = lerp(sIntro, LOCK.s, moveU);
-  hub = [CX + (hub[0] - CX) * drift, CY + (hub[1] - CY) * drift];
-  S *= drift;
+  let hubA = [lerp(CX, LH[0], moveU), lerp(CY, LH[1], moveU)];
+  hubA = [CX + (hubA[0] - CX) * drift, CY + (hubA[1] - CY) * drift];
+  const SA = lerp(sIntro, LOCK.s, moveU) * drift;
 
   // Arms fly in along their own axes while the whole mark turns into place.
   const spin = -38 * (1 - E.outExpo(prog(t, 0, T.mark_settle)));
   ARM_ORDER.forEach((i, k) => {
     const u = E.outExpo(prog(t, k * 0.032, T.mark_settle));
     const off = (470 / S0) * (1 - u);
-    markArms[i].setAttribute('transform', `translate(${(ARMS[i].dir[0] * off).toFixed(3)} ${(ARMS[i].dir[1] * off).toFixed(3)})`);
+    markArmsA[i].setAttribute('transform', `translate(${(ARMS[i].dir[0] * off).toFixed(3)} ${(ARMS[i].dir[1] * off).toFixed(3)})`);
   });
+  set($('markA'), { transform: `translate(${hubA[0].toFixed(2)} ${hubA[1].toFixed(2)}) scale(${SA.toFixed(4)}) rotate(${spin.toFixed(3)}) translate(${-HUB[0]} ${-HUB[1]})` });
 
   // Wordmark lines slide up out of their own baselines.
   const ls = LOCK.s * drift;
@@ -266,12 +269,80 @@ function seek(t) {
   set($('landClipRect'), { x: 38, y: 18.405 - 14.5, width: 80, height: 18.2 });
   set($('repClipRect'), { x: 38, y: 34.913 - 14.5, width: 80, height: 19 });
 
-  // ---------------- Scene B: search pill drops in over the sky (1.84-3.50)
-  show($('sceneB'), t >= 1.9 && t < 4.0);
-  const pillU = settleHit(t, 1.98, T.pill_land, 0.024, 0.6);
-  const pillDrift = 26 * E.inOutSine(prog(t, T.pill_land + 0.2, 3.1));
+  // ---------------- Scene L: the reference's "LOOKING FOR" beat (1.80-3.02)
+  const whipU = prog(t, T.whip - 0.16, T.whip + 0.02);
+  show($('sceneL'), t >= 1.8 && whipU < 1);
+  set($('sceneL'), { transform: `translate(0 ${(-2050 * E.inCubic(whipU)).toFixed(1)})` });
+  set($('whipBlurK'), { stdDeviation: `0 ${(110 * E.inCubic(whipU)).toFixed(1)}` });
+
+  // Brand blue floods out of the mark, then cools to slate and warms to charcoal, as in the reference.
+  const fu = E.inOutCubic(prog(t, 1.8, T.flood + 0.06));
+  const cool = E.inOutSine(prog(t, T.flood + 0.02, T.flood + 0.22));
+  const warm = E.inOutSine(prog(t, T.flood + 0.18, T.flood + 0.42));
+  set($('flood'), {
+    cx: hubA[0].toFixed(1), cy: hubA[1].toFixed(1), r: (1500 * fu).toFixed(1),
+    fill: mixHex(mixHex('#0F68D8', '#3B5873', cool), '#4E4D4A', warm),
+  });
+
+  // One soft light hump rises from bottom centre and widens; its shoulders lag, so the
+  // corners stay dark for a moment after the centre has cleared.
+  const wu = prog(t, T.flood + 0.14, T.flood + 0.66);
+  const crest = lerp(2010, -520, E.inOutCubic(wu));
+  const shoulder = lerp(820, 380, E.outCubic(wu));
+  const spread = lerp(200, 560, E.outCubic(wu));
+  let wd = `M-160,2400 L-160,${(crest + shoulder).toFixed(1)}`;
+  for (let x = -160; x <= W + 160; x += 24) {
+    const g = Math.exp(-Math.pow((x - CX) / spread, 2));
+    wd += ` L${x},${(crest + shoulder * (1 - g)).toFixed(1)}`;
+  }
+  wd += ` L${W + 160},2400 Z`;
+  set($('wave'), { d: wd });
+  set($('threadMaskWave'), { d: wd });
+  const paperOn = t >= T.flood + 0.74;
+  show($('paperL'), paperOn);
+  show($('threadMaskFull'), paperOn);
+
+  // The thread drifts slowly behind the line.
+  const thY = 1006, thPh = 0.9 + 1.1 * t;
+  // two strands crossing, like the twisted ribbon in the reference
+  set($('threadShadow'), { d: threadPath(thY + 12, thPh) });
+  set($('threadShadow2'), { d: threadPath(thY + 18, thPh + 2.4, 42, 16) });
+  set($('threadLight'), { d: threadPath(thY, thPh) });
+
+  // LOOKING FOR | LAND arrive as word bursts on the measured grid, the line drifting left.
+  const burstT = [T.flood + 0.25, T.flood + 0.5];
+  const lookDrift = -120 * Math.max(0, t - burstT[0]);
+  const lx = CX - LOOK_W / 2 + 40 + lookDrift;
+  const ly = 1010;
+  set($('lookText'), { x: lx.toFixed(1), y: ly });
+  let ln = 0;
+  LOOK_BURSTS.forEach(([c0, c1], b) => {
+    for (let k = c0; k < c1; k++) {
+      const tk = burstT[b] + (k - c0) * 0.006;
+      const a = prog(t, tk, tk + 0.06);
+      lSpans[k].setAttribute('fill-opacity', t < tk ? 0 : (0.3 + 0.7 * a).toFixed(3));
+      if (t >= tk) ln = Math.max(ln, k + 1);
+    }
+  });
+  if (ln >= 11 && LOOK[11] === ' ' && t >= burstT[0]) lSpans[11].setAttribute('fill-opacity', 1);
+
+  // Selection steps back over LAND one letter at a time, like shift + left arrow.
+  const SEL0 = T.highlight - 0.06, STEP = 0.04;
+  const nSel = t < SEL0 ? 0 : Math.min(4, 1 + Math.floor((t - SEL0) / STEP));
+  const selR = lx + LOOK_X[LOOK_KEY + 4], selL = lx + LOOK_X[LOOK_KEY + 4 - nSel];
+  const capTop = ly - LOOK_SIZE * 0.78, selH = LOOK_SIZE * 1.02;
+  set($('lookSel'), { x: selL.toFixed(1), y: capTop.toFixed(1), width: (selR - selL).toFixed(1), height: selH.toFixed(1) });
+  const doneT = burstT[1] + 0.03;
+  const blinkOn = t < doneT || Math.floor((t - doneT) * 3.2) % 2 === 0;
+  set($('lookCaret'), { x: (lx + LOOK_X[ln] + 6).toFixed(1), y: (ly - LOOK_SIZE * 0.84).toFixed(1), height: (LOOK_SIZE * 1.04).toFixed(1),
+    opacity: t >= burstT[0] - 0.12 && nSel === 0 && blinkOn ? 1 : 0 });
+
+  // ---------------- Scene B: search pill drops in over the sky (2.84-4.95)
+  show($('sceneB'), t >= T.whip - 0.1 && t < T.map);
+  const pillU = settleHit(t, T.whip - 0.02, T.pill_land, 0.024, 0.6);
+  const pillDrift = 26 * E.inOutSine(prog(t, T.pill_land + 0.2, 4.0));
   const py = lerp(-220, PILL.y, pillU) + pillDrift;
-  const colU = E.inOutCubic(prog(t, 3.08, 3.26));
+  const colU = E.inOutCubic(prog(t, 4.02, 4.20));
   const btnX0 = PILL.x + PILL.w + 24 + BTN_R;
   const pillL = lerp(PILL.x, btnX0 - BTN_R, colU);
   const pillWd = lerp(PILL.w, BTN_R * 2, colU);
@@ -281,15 +352,16 @@ function seek(t) {
 
   const qx = PILL.x + 122;
   set($('query'), { x: (qx + (pillL - PILL.x)).toFixed(1), y: (py + 16).toFixed(1) });
-  const typedN = typeChars(qSpans, t, 2.40, 0.02);
-  const typingDone = 2.40 + QUERY.length * 0.02;
+  const Q_T0 = T.pill_land + 0.1;
+  const typedN = typeChars(qSpans, t, Q_T0, 0.02);
+  const typingDone = Q_T0 + QUERY.length * 0.02;
   const caretOn = t < typingDone + 0.02 || Math.floor((t - typingDone) * 3.2) % 2 === 1;
-  set($('queryCaret'), { x: (qx + (pillL - PILL.x) + typedN * QW + 3).toFixed(1), y: (py - 28).toFixed(1), opacity: t >= 2.3 && caretOn ? 1 : 0 });
+  set($('queryCaret'), { x: (qx + (pillL - PILL.x) + typedN * QW + 3).toFixed(1), y: (py - 28).toFixed(1), opacity: t >= Q_T0 - 0.06 && caretOn ? 1 : 0 });
 
   // Button: drops with the pill (a beat of follow-through), then takes the stage.
-  const btnDropU = settleHit(t, 2.01, T.pill_land + 0.03, 0.03, 0.6);
+  const btnDropU = settleHit(t, T.whip + 0.01, T.pill_land + 0.03, 0.03, 0.6);
   const by0 = lerp(-220, PILL.y, btnDropU) + pillDrift;
-  const travU = E.inOutCubic(prog(t, 3.16, 3.44));
+  const travU = E.inOutCubic(prog(t, 4.10, 4.38));
   let bx = lerp(btnX0, CX, travU), by = lerp(by0, 1010, travU);
   let br = lerp(BTN_R, 96, travU);
   const press = 1 - 0.14 * E.inQuad(prog(t, T.click - 0.08, T.click));
@@ -297,31 +369,25 @@ function seek(t) {
   const bk = t < T.click ? press : lerp(0.86, 1, release);
   br *= bk;
   set($('btnCircle'), { cx: bx.toFixed(1), cy: by.toFixed(1), r: br.toFixed(2) });
-  const arrowK = 1 - E.inOutCubic(prog(t, 3.12, 3.22));
+  const arrowK = 1 - E.inOutCubic(prog(t, 4.06, 4.16));
   set($('btnArrow'), { transform: `translate(${bx.toFixed(1)} ${by.toFixed(1)}) scale(${(arrowK * br / BTN_R).toFixed(3)})`, opacity: arrowK > 0.01 ? 1 : 0 });
 
-  // The mark travels from the lockup into the pill, then rides the collapse into the button.
-  if (t >= 1.84) {
-    const flyU = E.inOutCubic(prog(t, 1.84, T.pill_land));
-    const iconTarget = [PILL.x + 72, py];
-    const iconS = 1.75;
-    hub = [lerp(hub[0], iconTarget[0], flyU), lerp(hub[1], iconTarget[1], flyU)];
-    S = lerp(S, iconS, flyU);
-    if (t >= 3.08) {
-      const rideU = colU;
-      hub = [lerp(iconTarget[0], btnX0, rideU), py];
-      S = lerp(iconS, 1.9, rideU);
-      if (t >= 3.16) { hub = [bx, by]; S = lerp(1.9, 3.1, travU) * bk * (1 - E.inCubic(prog(t, T.click + 0.04, T.click + 0.22))); }
-    }
+  // Second mark: the pill's icon, then it rides the collapse and becomes the button's face.
+  const iconTarget = [PILL.x + 72, py];
+  let hub = iconTarget, S = 1.75;
+  if (t >= 4.02) {
+    hub = [lerp(iconTarget[0], btnX0, colU), py];
+    S = lerp(1.75, 1.9, colU);
+    if (t >= 4.10) { hub = [bx, by]; S = lerp(1.9, 3.1, travU) * bk * (1 - E.inCubic(prog(t, T.click + 0.04, T.click + 0.22))); }
   }
-  const markWhite = E.inOutCubic(prog(t, 3.18, 3.30));
+  const markWhite = E.inOutCubic(prog(t, 4.12, 4.24));
   set($('markArms'), { fill: mixHex('#0F68D8', '#FFFFFF', markWhite) });
-  set($('mark'), { transform: `translate(${hub[0].toFixed(2)} ${hub[1].toFixed(2)}) scale(${S.toFixed(4)}) rotate(${spin.toFixed(3)}) translate(${-HUB[0]} ${-HUB[1]})` });
+  set($('mark'), { transform: `translate(${hub[0].toFixed(2)} ${hub[1].toFixed(2)}) scale(${S.toFixed(4)}) translate(${-HUB[0]} ${-HUB[1]})` });
   show($('mark'), t < T.click + 0.23);
 
-  // Cursor glides in, presses on the measured click.
-  show($('cursor'), t >= 3.1 && t < T.click + 0.43);
-  const cu = E.outCubic(prog(t, 3.1, T.click - 0.07));
+  // Cursor glides in, presses on the measured click, then leaves.
+  show($('cursor'), t >= 4.04 && t < T.click + 0.43);
+  const cu = E.outCubic(prog(t, 4.04, T.click - 0.07));
   const p0 = [1130, 1720], p1 = [930, 1200], p2 = [CX + 14, 1010 + 18];
   const cxp = (1 - cu) * (1 - cu) * p0[0] + 2 * (1 - cu) * cu * p1[0] + cu * cu * p2[0];
   const cyp = (1 - cu) * (1 - cu) * p0[1] + 2 * (1 - cu) * cu * p1[1] + cu * cu * p2[1];
@@ -329,60 +395,31 @@ function seek(t) {
   const exitU = E.inCubic(prog(t, T.click + 0.12, T.click + 0.42));
   set($('cursor'), { transform: `translate(${(cxp + 260 * exitU).toFixed(1)} ${(cyp + 520 * exitU).toFixed(1)}) scale(${(1.25 * ck).toFixed(3)})` });
 
-  // ---------------- Scene C: blue flood, light wave (3.50-4.75)
-  show($('sceneC'), t >= T.click && t < 4.76);
-  const fu = E.inOutCubic(prog(t, T.click + 0.02, T.flood - 0.02));
-  set($('flood'), {
-    cx: CX, cy: 1010, r: lerp(96, 2250, fu).toFixed(1),
-    fill: mixHex('#0F68D8', '#0B2E63', E.inOutSine(prog(t, T.flood, T.flood + 0.3))),
-  });
-  const wu = E.inOutCubic(prog(t, T.flood + 0.04, 4.7));
-  const wy = lerp(2180, -280, wu);
-  const amp = 150 * (1 - 0.45 * wu), ph = 1.2 + 2.6 * wu;
-  let wd = `M-100,2300 L-100,${wy}`;
-  for (let x = -100; x <= W + 100; x += 30) {
-    const y = wy + amp * Math.sin((x / 1300) * Math.PI * 2 + ph) + amp * 0.42 * Math.sin((x / 610) * Math.PI * 2 + ph * 1.7);
-    wd += ` L${x},${y.toFixed(1)}`;
-  }
-  wd += ` L${W + 100},2300 Z`;
-  set($('wave'), { d: wd });
+  // The click opens the results: paper grows out of the button.
+  const ru = E.inOutCubic(prog(t, T.click + 0.02, T.map - 0.05));
+  show($('reveal'), t >= T.click && t < T.map);
+  set($('reveal'), { cx: CX, cy: 1010, r: (2250 * ru).toFixed(1) });
 
-  // ---------------- Scene D1: typed line, map, pin (4.00-6.70)
+  // ---------------- Scene D1: map, title, pin (4.94-6.93)
   const holeU = prog(t, T.terrain - 0.18, T.terrain + 0.42);
-  const dOn = t >= T.flood && holeU < 1;
+  const dOn = t >= T.map - 0.06 && holeU < 1;
   show($('sceneD'), dOn);
-  // Detach the mask whenever the hole is not opening: Chromium otherwise keeps a
-  // stale raster of the masked group and can paint it into later frames.
+  // Detach the mask whenever the hole is not opening.
   if (holeU > 0 && dOn) $('sceneD').setAttribute('mask', 'url(#holeMask)');
   else $('sceneD').removeAttribute('mask');
-  show($('mapPaper'), t >= 4.69);
-  show($('mapGrain'), t >= 4.69);
 
-  // contour lines behind the typed line, drawn left to right then drawn off
-  const cIn = E.outCubic(prog(t, 4.40, 4.95));
-  const cOut = E.inOutCubic(prog(t, T.map, T.map + 0.45));
-  contourEls.forEach((el, i) => {
-    set(el, {
-      d: contourPath(940 + i * 54 - 400 * cOut, 0.6 * t + i * 0.9, 20 + i * 4),
-      'stroke-dashoffset': (cIn < 1 ? 1 - cIn : -cOut).toFixed(4),
-    });
-  });
-
-  // typed line, then it rises to become the map's title
+  // Map title types in at the top; IBADAN is highlighted as the pin lands on it.
   const tx = CX - (TITLE.length * TW) / 2;
-  const tUp = E.inOutCubic(prog(t, T.map, T.map + 0.45));
-  const ty = lerp(985, 330, tUp), tk = lerp(1, 0.82, tUp);
-  set($('title'), { transform: `translate(${CX} ${ty.toFixed(1)}) scale(${tk.toFixed(4)}) translate(${-CX} ${-985})` });
+  set($('title'), { transform: `translate(${CX} 330) scale(0.82) translate(${-CX} ${-985})` });
   set($('titleText'), { x: tx.toFixed(1), y: 985 });
-  set($('titleTextHi'), { x: tx.toFixed(1), y: 985 });
-  const tn = typeChars(tSpans, t, 4.38, 0.019);
-  const titleDone = 4.38 + TITLE.length * 0.019;
-  const tCaret = (t < titleDone + 0.02 || Math.floor((t - titleDone) * 3.2) % 2 === 1) && t < T.highlight - 0.06;
-  set($('titleCaret'), { x: (tx + tn * TW + 4).toFixed(1), y: 985 - 50, opacity: t >= 4.36 && tCaret ? 1 : 0 });
-  const hu = E.outCubic(prog(t, T.highlight - 0.07, T.highlight + 0.12));
+  const TITLE_T0 = T.map + 0.02;
+  const tn = typeChars(tSpans, t, TITLE_T0, 0.018);
+  const titleDone = TITLE_T0 + TITLE.length * 0.018;
+  const tCaret = (t < titleDone + 0.02 || Math.floor((t - titleDone) * 3.2) % 2 === 1) && t < T.pin - 0.06;
+  set($('titleCaret'), { x: (tx + tn * TW + 4).toFixed(1), y: 985 - 50, opacity: t >= TITLE_T0 - 0.04 && tCaret ? 1 : 0 });
+  const hu = E.outCubic(prog(t, T.pin - 0.04, T.pin + 0.14));
   const hlW = (6 * TW + 20) * hu;
   set($('hlRect'), { x: tx - 10, y: 985 - 52, width: hlW.toFixed(1), height: 70 });
-  set($('hlClipRect'), { x: tx - 10, y: 985 - 52, width: hlW.toFixed(1), height: 70 });
 
   // Map: states ripple out from Ibadan, Oyo fills from the city, camera dives in.
   const zoomU = E.inOutCubic(prog(t, T.oyo + 0.06, T.terrain + 0.35));
@@ -423,8 +460,8 @@ function seek(t) {
 
   // ---------------- GL plates
   let glState = null;
-  if (t >= 1.8 && t < 3.99) {
-    const u = prog(t, 1.8, 3.99);
+  if (t >= T.whip - 0.18 && t < T.map) {
+    const u = prog(t, T.whip - 0.18, T.map);
     glState = { mode: 0, camH: lerp(700, 380, E.inOutSine(u)), pitch: lerp(0.05, 0.17, E.inOutSine(u)), travel: t * 160 };
   } else if (t >= T_LAND0 - 0.02) {
     const L = landCam(t);
