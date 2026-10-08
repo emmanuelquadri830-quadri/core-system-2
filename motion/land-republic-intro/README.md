@@ -33,7 +33,7 @@ Requires Node 22, Playwright Chromium and ffmpeg. The Python steps need numpy, s
 - `window.seek(t)` paints frame `t` from nothing. There are no CSS transitions, timers or `requestAnimationFrame` in render mode, and no state is carried between frames.
 - Randomness comes from mulberry32 seeds (JS and Python) and hash noise in the shaders. Nothing uses `Math.random`.
 - `render.mjs` paints every frame on a freshly loaded page (three pages in parallel, frames written in order). When frames were painted one after another on the same page, Chromium reused stale raster tiles: survey lines from 7.2 s appeared at 7.4 s, and the masked map leaked into the land. A sequential-versus-fresh check caught both. Fresh pages rule out carried state by construction.
-- `--verify` paints a sample of frames twice, in different orders and on different pages, and fails on anything beyond rasteriser noise (more than 50 pixels differing, or any pixel off by more than 48/765).
+- `--verify` paints a sample of frames twice, in different orders and on different pages, and fails on anything beyond rasteriser noise. Noise means either a few stray pixels (at most 50, each off by at most 48/765) or sub-visible rounding across the frame (no pixel off by more than 12/765, with a mean of 2 or less). The second case covers half-opacity flashes composited with different rounding between runs.
 - Encode: H.264 High, yuv420p, CRF 16, AAC 320k.
 
 ## Sound
