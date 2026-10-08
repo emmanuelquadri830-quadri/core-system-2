@@ -85,7 +85,12 @@ window.seek = (t) => {
     if (on) s.update(t);
   }
 };
-window.filmInfo = { duration: DURATION, fps: FPS, width: W, height: H, ar: AR, scenes: scenes.map((s) => s.id) };
+// Hard cuts: scene edges plus any cuts a scene declares. The renderer keeps
+// a frame's motion-blur samples on one side of a cut, never across it.
+const cuts = [...new Set(scenes.flatMap((s) => [s.from, s.to, ...(s.cuts || [])]))]
+  .filter((c) => c > 0 && c < DURATION)
+  .sort((a, b) => a - b);
+window.filmInfo = { duration: DURATION, fps: FPS, width: W, height: H, ar: AR, scenes: scenes.map((s) => s.id), cuts };
 window.ready = (async () => {
   await preload(stage);
   window.seek(0);

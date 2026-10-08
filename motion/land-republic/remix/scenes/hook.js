@@ -62,6 +62,7 @@ export default function hook(ctx) {
     root,
     from: 0,
     to: T(8),
+    cuts: [T(3), T(4)], // the city card cuts in and out
     update(t) {
       const chaos = t >= T(3) && t < T(4);
       // Beat 3: the pin searches the real city, framed as a card.

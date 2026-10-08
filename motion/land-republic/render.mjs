@@ -1,11 +1,14 @@
-// node render.mjs --ar 16x9 [--fps 30] [--blur 4] [--shutter 0.5] [--from 0] [--to 20]
+// node render.mjs --ar 16x9 [--fps 30] [--blur 8] [--shutter 0.5] [--from 0] [--to 20]
 //                 [--workers 3] [--crf 16] [--out out/land-republic-16x9.mp4]
 //                 [--film location]   render the 15 s location film instead
 //                 [--film remix]      render the remix of the first film (remix/)
 //
 // Frames come from window.seek(t) in headless Chromium. With --blur N each
-// output frame averages N sub-frames spread across a centred shutter
-// (0.5 = 180 degrees), which gives real motion blur on fast moves. Workers
+// output frame averages N sub-frames spread across a shutter that opens at
+// the frame time (0.5 = 180 degrees), which gives real motion blur on fast
+// moves. A frame on a beat therefore shows the hit itself, and when a cut
+// listed in window.filmInfo.cuts falls inside the shutter, the samples are
+// packed in before it, so a hard cut never turns into a one-frame blend. Workers
 // render contiguous chunks to lossless RGB segments; the final pass encodes
 // H.264 yuv420p (BT.709) at CRF 16 and muxes the mastered score.
 
@@ -58,7 +61,21 @@ function run(cmd, argv, { feed } = {}) {
   });
 }
 
-const subOffsets = Array.from({ length: BLUR }, (_, j) => (BLUR === 1 ? 0 : ((j + 0.5) / BLUR - 0.5) * (SHUTTER / FPS)));
+const OPEN = SHUTTER / FPS; // seconds the shutter stays open
+const subFrac = Array.from({ length: BLUR }, (_, j) => (BLUR === 1 ? 0 : (j + 0.5) / BLUR));
+// Sample times for the frame at t: across [t, t + OPEN). When a cut falls
+// inside that window the samples move to whichever side of it holds more of
+// the shutter, so a cut on the beat shows on the beat's own frame.
+function samplesAt(t, cuts) {
+  let a = t;
+  let b = t + OPEN;
+  const cut = cuts.find((c) => c > a && c < b);
+  if (cut !== undefined) {
+    if (cut - t < OPEN / 2) a = cut + 1e-5;
+    else b = cut;
+  }
+  return subFrac.map((f) => a + f * (b - a));
+}
 
 const { server, port } = await serve(ROOT);
 const browser = await chromium.launch({ args: ['--disable-gpu-vsync', '--font-render-hinting=none'] });
@@ -70,6 +87,7 @@ async function worker(k, start, end) {
   await page.goto(url);
   await page.waitForFunction(() => window.ready, null, { timeout: 120000 });
   await page.evaluate(() => window.ready);
+  const cuts = await page.evaluate(() => (window.filmInfo && window.filmInfo.cuts) || []);
   const cdp = await page.context().newCDPSession(page);
   const seg = path.join(segDir, `seg-${String(k).padStart(2, '0')}.mkv`);
   const vf = [];
@@ -81,8 +99,8 @@ async function worker(k, start, end) {
     feed: async (p) => {
       for (let f = start; f < end; f++) {
         const t = FROM + f / FPS;
-        for (const off of subOffsets) {
-          const ts = Math.min(Math.max(t + off, 0), TO - 1e-4);
+        for (const sample of samplesAt(t, cuts)) {
+          const ts = Math.min(Math.max(sample, 0), TO - 1e-4);
           await page.evaluate((x) => window.seek(x), ts);
           const { data } = await cdp.send('Page.captureScreenshot', { format: 'png', optimizeForSpeed: true });
           const buf = Buffer.from(data, 'base64');
