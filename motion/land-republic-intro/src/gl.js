@@ -21,6 +21,17 @@ uniform float uRot;
 uniform float uWisp;      // 0..1 cloud wisps crossing the lens
 uniform float uWispZ;     // wisp parallax travel
 uniform float uExpose;
+// earth
+uniform sampler2D uBM;      // NASA Blue Marble, equirectangular
+uniform sampler2D uClouds;  // cloud coverage
+uniform sampler2D uLocal;   // Ibadan region: R urban footprint, G water (Natural Earth)
+uniform vec4 uLocalBox;     // lon0, lat0, lon1, lat1 (degrees)
+uniform vec2 uIbadan;       // lon, lat (degrees)
+uniform vec3 uCamPos, uCamR, uCamU, uCamF;
+uniform float uTanH;
+uniform float uCloudAmt;
+uniform float uDim;
+uniform vec3 uReveal;       // cx, cy (GL pixels), r; earth inside, sky outside
 
 float hash12(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * .1031);
@@ -55,7 +66,7 @@ float fbmAA(vec2 p, float f0, int oct, float fw) {
   vec2 q = p * f0;
   for (int i = 0; i < 8; i++) {
     if (i >= oct) break;
-    float k = 1.0 - smoothstep(0.22, 0.5, f * fw);
+    float k = 1.0 - smoothstep(0.2, 0.45, f * fw);
     s += a * (k * vnoise(q) + (1.0 - k) * 0.5);
     norm += a;
     q = ROT * q * 2.03 + 17.1;
@@ -264,15 +275,152 @@ vec3 land(vec2 frag) {
   return col * uExpose;
 }
 
+// ---------------------------------------------------------------- earth
+const float RE = 6371.0;
+const float PI = 3.14159265;
+
+// Voronoi cell id and distance-to-edge in a 2D field (unit cells).
+vec3 voro(vec2 p) {
+  vec2 g = floor(p), f = fract(p);
+  float d1 = 8.0, d2 = 8.0; vec2 id = vec2(0.0);
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    vec2 o = vec2(float(i), float(j));
+    vec2 r = o + hash22(g + o) - f;
+    float d = dot(r, r);
+    if (d < d1) { d2 = d1; d1 = d; id = g + o; } else if (d < d2) { d2 = d; }
+  }
+  return vec3(id, sqrt(d2) - sqrt(d1));
+}
+
+vec2 warp(vec2 p) {
+  return p + 0.9 * vec2(fbm(p * 0.7 + 1.7, 4), fbm(p * 0.7 + 9.2, 4)) - 0.45;
+}
+
+vec3 groundDetail(vec3 base, vec2 m, float fp, float urban, float water) {
+  // m: km east/north of Ibadan; fp: km per pixel. Real Blue Marble colour stays the anchor and
+  // the detail stays muted: south-west Nigeria reads as olive bush and farmland, with towns and
+  // Ibadan's built-up area (Natural Earth footprint) in warm grey-brown.
+  // land only: the Blue Marble ocean is blue-dominant
+  float land = 1.0 - smoothstep(0.02, 0.10, base.b - max(base.r, base.g));
+  float w = smoothstep(8.0, 1.5, fp) * land;
+  vec3 b0 = mix(base, vec3(0.36, 0.40, 0.25), 0.35);          // pull toward Google Earth's olive
+  vec3 forest = b0 * vec3(0.78, 0.86, 0.74);
+  vec3 farm   = b0 * vec3(1.10, 1.06, 0.92);
+  vec3 bare   = b0 * vec3(1.22, 1.08, 0.92);
+
+  float big = fbmAA(warp(m * 0.08) * 6.0 + 3.0, 1.0, 6, fp * 0.48);
+  float mid = fbmAA(warp(m * 0.4) * 2.0 + 17.0, 1.0, 6, fp * 0.8);
+  float fine = fbmAA(m * 4.0 + 29.0, 1.0, 5, fp * 4.0);
+  float region = fbmAA(warp(m * 0.012) * 4.0 + 47.0, 1.0, 6, fp * 0.048);   // 10-30 km land-cover patches
+  float forestMask = smoothstep(0.44, 0.62, big * 0.4 + mid * 0.3 + region * 0.3);
+  vec3 lc = mix(farm, forest, forestMask);
+  lc = mix(lc, bare, smoothstep(0.58, 0.72, mid) * (1.0 - forestMask) * 0.6);
+  lc *= (0.93 + 0.14 * fine) * (0.9 + 0.2 * region);
+
+  // farmland parcels when close enough to resolve them
+  float wF = smoothstep(0.1, 0.03, fp);
+  if (wF > 0.0) {
+    vec3 v = voro(warp(m * 1.6) * 2.4);
+    float h = hash12(v.xy);
+    vec3 parcel = lc * (0.92 + 0.16 * h);
+    float border = 1.0 - smoothstep(0.0, 0.05 + fp * 6.0, v.z);
+    parcel = mix(parcel, forest, border * 0.35);
+    lc = mix(lc, mix(parcel, lc, forestMask), wF);
+  }
+
+  // Ibadan: dense core with streets and trees, sprawl dissolving into the countryside
+  float sprawl = urban + (fbmAA(warp(m * 0.9) * 1.6 + 61.0, 1.0, 6, fp * 0.6) - 0.5) * 0.6;
+  float built = smoothstep(0.22, 0.80, sprawl) * 0.85;
+  float grain = fbmAA(m * 6.0 + 5.0, 1.0, 5, fp * 6.0);
+  vec3 city = mix(vec3(0.43, 0.40, 0.35), vec3(0.37, 0.31, 0.26), grain);      // grey roofs and rusted zinc
+  city = mix(city, forest, smoothstep(0.45, 0.72, fbmAA(m * 2.5 + 77.0, 1.0, 5, fp * 2.5)) * 0.6);
+  lc = mix(lc, city, built * 0.92);
+
+  lc = mix(lc, vec3(0.22, 0.27, 0.22), water * smoothstep(1.5, 0.3, fp) * 0.7);
+  // relief: low hills around the city
+  float hgt = fbm(m * 0.3, 5);
+  float hx = fbm((m + vec2(0.06, 0.0)) * 0.3, 5) - hgt;
+  float hy = fbm((m + vec2(0.0, 0.06)) * 0.3, 5) - hgt;
+  lc *= 1.0 + clamp((-hx + hy) * 9.0, -0.08, 0.08);
+  return mix(base, lc, w);
+}
+
+vec3 earth(vec2 frag) {
+  vec2 ndc = frag / uRes * 2.0 - 1.0;
+  float aspect = uRes.x / uRes.y;
+  vec3 rd = normalize(uCamF + ndc.x * uTanH * aspect * uCamR + ndc.y * uTanH * uCamU);
+  vec3 ro = uCamPos;
+  float b = dot(ro, rd);
+  float c = dot(ro, ro) - RE * RE;
+  float disc = b * b - c;
+  float camAlt = length(ro) - RE;
+  float H = 38.0 + camAlt * 0.0045;               // visual atmosphere scale height
+  vec3 atmo = vec3(0.36, 0.60, 1.0);
+
+  // space and the glow around the limb
+  float tca = max(-b, 0.0);
+  float minAlt = length(ro + rd * tca) - RE;
+  float glow = exp(-max(minAlt, 0.0) / H);
+  vec3 col = vec3(0.004, 0.006, 0.012) + atmo * glow * 0.95 + vec3(0.6, 0.75, 1.0) * pow(glow, 6.0) * 0.5;
+
+  if (disc > 0.0 && -b - sqrt(disc) > 0.0) {
+    float t = -b - sqrt(disc);
+    vec3 p = ro + rd * t;
+    vec3 n = p / RE;
+    float lat = asin(clamp(n.z, -1.0, 1.0));
+    float lon = atan(n.y, n.x);
+    vec2 uvB = vec2(lon / (2.0 * PI) + 0.5, 0.5 - lat / PI);
+    vec2 tx = vec2(1.0 / 4096.0, 1.0 / 2048.0) * 0.75;
+    vec3 base = 0.25 * (texture2D(uBM, uvB + tx * vec2(-1.0, -1.0)).rgb + texture2D(uBM, uvB + tx * vec2(1.0, -1.0)).rgb
+                      + texture2D(uBM, uvB + tx * vec2(-1.0, 1.0)).rgb + texture2D(uBM, uvB + tx * vec2(1.0, 1.0)).rgb);
+    base = pow(base, vec3(0.92)) * 1.08;            // brighter, Google Earth-like
+    float fp = t * 2.0 * uTanH / uRes.y;            // km per pixel
+    float lonD = degrees(lon), latD = degrees(lat);
+    vec2 m = vec2((lonD - uIbadan.x) * 111.32 * cos(radians(uIbadan.y)), (latD - uIbadan.y) * 110.57);
+    float urban = 0.0, water = 0.0;
+    vec2 uvL = vec2((lonD - uLocalBox.x) / (uLocalBox.z - uLocalBox.x), (uLocalBox.w - latD) / (uLocalBox.w - uLocalBox.y));
+    if (uvL.x > 0.0 && uvL.x < 1.0 && uvL.y > 0.0 && uvL.y < 1.0) {
+      vec3 L = texture2D(uLocal, uvL).rgb;
+      float edgeFade = smoothstep(0.0, 0.08, min(min(uvL.x, 1.0 - uvL.x), min(uvL.y, 1.0 - uvL.y)));
+      urban = L.r * edgeFade; water = L.g * edgeFade;
+    }
+    vec3 g = fp < 8.0 ? groundDetail(base, m, fp, urban, water) : base;
+    // soft daylight, sun high over the scene
+    float lam = clamp(dot(n, normalize(vec3(0.45, 0.25, 0.86) + n * 1.6)), 0.0, 1.0);
+    g *= 0.82 + 0.25 * lam;
+    // clouds, only from far away
+    if (uCloudAmt > 0.0) {
+      float cl = texture2D(uClouds, vec2(lon / (2.0 * PI) + 0.5 + 0.004, 0.5 - lat / PI)).r;
+      g = mix(g, vec3(0.97, 0.98, 1.0), smoothstep(0.08, 0.85, cl) * 0.92 * uCloudAmt);
+    }
+    // atmosphere: limb brightening and aerial haze
+    float mu = clamp(dot(n, -rd), 0.0, 1.0);
+    g = mix(g, atmo * 0.9 + 0.1, pow(1.0 - mu, 4.0) * 0.75);
+    g = mix(g, vec3(0.64, 0.76, 0.92), (1.0 - exp(-t / 2600.0)) * 0.6 * pow(1.0 - mu, 1.5));
+    col = g;
+  }
+  float luma = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(col, vec3(luma) * 0.34, uDim);
+  return col;
+}
+
 void main() {
-  vec3 col = uMode < 0.5 ? sky(gl_FragCoord.xy) : land(gl_FragCoord.xy);
+  vec3 col;
+  if (uMode < 0.5) col = sky(gl_FragCoord.xy);
+  else if (uMode < 1.5) col = land(gl_FragCoord.xy);
+  else if (uMode < 2.5) col = earth(gl_FragCoord.xy);
+  else {
+    // the search button opens onto space: earth inside the circle, sky outside
+    float d = length(gl_FragCoord.xy - uReveal.xy) - uReveal.z;
+    col = d < 0.0 ? earth(gl_FragCoord.xy) : sky(gl_FragCoord.xy);
+  }
   // dither against banding in the encode
   float dn = hash12(gl_FragCoord.xy) - 0.5;
   gl_FragColor = vec4(col + dn / 255.0, 1.0);
 }
 `;
 
-export function createGL(canvas) {
+export function createGL(canvas, images = {}) {
   const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: false, alpha: false });
   if (!gl) throw new Error('WebGL unavailable');
   const sh = (type, src) => {
@@ -295,9 +443,24 @@ export function createGL(canvas) {
   gl.enableVertexAttribArray(loc);
   gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   const U = {};
-  for (const n of ['uRes', 'uMode', 'uCamH', 'uPitch', 'uTravel', 'uCam', 'uPx', 'uRot', 'uWisp', 'uWispZ', 'uExpose']) {
+  for (const n of ['uRes', 'uMode', 'uCamH', 'uPitch', 'uTravel', 'uCam', 'uPx', 'uRot', 'uWisp', 'uWispZ', 'uExpose',
+    'uBM', 'uClouds', 'uLocal', 'uLocalBox', 'uIbadan', 'uCamPos', 'uCamR', 'uCamU', 'uCamF', 'uTanH', 'uCloudAmt', 'uDim', 'uReveal']) {
     U[n] = gl.getUniformLocation(prog, n);
   }
+  // Earth textures (power-of-two, mipmapped).
+  [['uBM', images.bm, 0], ['uClouds', images.clouds, 1], ['uLocal', images.local, 2]].forEach(([name, img, unit]) => {
+    if (!img) return;
+    const tex = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0 + unit);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, name === 'uLocal' ? gl.CLAMP_TO_EDGE : gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.uniform1i(U[name], unit);
+  });
   gl.viewport(0, 0, canvas.width, canvas.height);
 
   return function draw(s) {
@@ -312,6 +475,16 @@ export function createGL(canvas) {
     gl.uniform1f(U.uWisp, s.wisp ?? 0);
     gl.uniform1f(U.uWispZ, s.wispZ ?? 0);
     gl.uniform1f(U.uExpose, s.expose ?? 1);
+    if (s.earth) {
+      const e = s.earth;
+      gl.uniform3fv(U.uCamPos, e.pos); gl.uniform3fv(U.uCamR, e.right); gl.uniform3fv(U.uCamU, e.up); gl.uniform3fv(U.uCamF, e.fwd);
+      gl.uniform1f(U.uTanH, e.tanH);
+      gl.uniform4fv(U.uLocalBox, e.localBox);
+      gl.uniform2fv(U.uIbadan, e.ibadan);
+      gl.uniform1f(U.uCloudAmt, e.cloudAmt);
+      gl.uniform1f(U.uDim, e.dim);
+      gl.uniform3fv(U.uReveal, e.reveal);
+    }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.finish();
   };

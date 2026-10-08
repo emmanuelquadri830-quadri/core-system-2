@@ -22,7 +22,7 @@ import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(ROOT, 'out');
-const FPS = 30, DURATION = 9, FRAMES = FPS * DURATION;   // frames 0..269, stops at 9.000 s
+const FPS = 30, DURATION = 10.5, FRAMES = FPS * DURATION;   // frames 0..314, stops at 10.500 s
 const WORKERS = 3;
 fs.mkdirSync(path.join(OUT, 'frames'), { recursive: true });
 
@@ -130,7 +130,7 @@ if (flag('--verify')) {
   const clip = val('--clip');
   const [a, b] = clip ? clip.split(',').map(Number) : [0, DURATION];
   const f0 = Math.round(a * FPS), f1 = Math.min(FRAMES, Math.round(b * FPS));
-  const outFile = clip ? path.join(OUT, `clip_${a}-${b}.mp4`) : path.join(OUT, 'land-republic-intro_0-9s.mp4');
+  const outFile = clip ? path.join(OUT, `clip_${a}-${b}.mp4`) : path.join(OUT, 'land-republic-intro.mp4');
   const ff = spawn('ffmpeg', [
     '-v', 'error', '-y',
     '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'png', '-i', '-',

@@ -4,7 +4,7 @@
 import { createGL } from './gl.js';
 
 const W = 1080, H = 1920, CX = 540, CY = 960;
-const DURATION = 9;
+const DURATION = 10.5;
 const NS = 'http://www.w3.org/2000/svg';
 
 // ------------------------------------------------------------------ helpers
@@ -54,11 +54,14 @@ const set = (el, attrs) => { for (const k in attrs) el.setAttribute(k, attrs[k])
 const show = (el, on) => { el.style.display = on ? '' : 'none'; };
 
 // ------------------------------------------------------------------ data
-const [BEATS, GEO] = await Promise.all([
+const [BEATS, VEC, GEO] = await Promise.all([
   fetch('beats.json').then(r => r.json()),
+  fetch('assets/earth/ibadan-vectors.json').then(r => r.json()),
   fetch('assets/geo.json').then(r => r.json()),
 ]);
-const T = BEATS.hits;   // measured hit times (s), from audio/score.py
+// Measured hit times (s), from audio/score.py. The earlier map, land and card story is
+// kept in this file for a later step but parked beyond the end of the film.
+const T = { map: 99, oyo: 99, pin: 99, terrain: 99, plot: 99, card: 99, ...BEATS.hits };
 await document.fonts.load('800 40px Figtree');
 await document.fonts.load('600 40px Figtree');
 await document.fonts.load('500 40px "Plex Mono"');
@@ -66,7 +69,13 @@ await document.fonts.load('600 40px "Plex Mono"');
 await document.fonts.load('500 40px "Plex Mono"', '₦');
 await document.fonts.ready;
 
-const drawGL = createGL($('gl'));
+const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+const [IMG_BM, IMG_CLOUDS, IMG_LOCAL] = await Promise.all([
+  loadImg('assets/earth/blue-marble-4096.jpg'),
+  loadImg('assets/earth/clouds-4096.jpg'),
+  loadImg('assets/earth/ibadan-local.png'),
+]);
+const drawGL = createGL($('gl'), { bm: IMG_BM, clouds: IMG_CLOUDS, local: IMG_LOCAL });
 
 // ------------------------------------------------------------------ mark
 const HUB = [18.21, 18.51];
@@ -230,6 +239,248 @@ function blob(cx, cy, r, t) {
   return d + 'Z';
 }
 
+// ------------------------------------------------------------------ world transition
+const RE = 6371;
+const TAN_H = Math.tan((40 / 2) * Math.PI / 180);   // 40 degree vertical field of view
+const ASPECT = W / H;
+const IBADAN = [3.928, 7.382];
+const JUNCTION = [3.942, 7.381];                     // where the expressways meet (Natural Earth)
+
+// Monotone cubic interpolation through keyframes (Fritsch-Carlson): smooth, no overshoot.
+function monotone(keys) {
+  const n = keys.length, x = keys.map(k => k[0]), y = keys.map(k => k[1]);
+  const d = [], m = new Array(n).fill(0);
+  for (let i = 0; i < n - 1; i++) d.push((y[i + 1] - y[i]) / (x[i + 1] - x[i]));
+  for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+  m[0] = 0; m[n - 1] = 0;                             // ease in and out at the ends
+  for (let i = 0; i < n - 1; i++) {
+    if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+    const a = m[i] / d[i], b = m[i + 1] / d[i], h = a * a + b * b;
+    if (h > 9) { const k = 3 / Math.sqrt(h); m[i] = k * a * d[i]; m[i + 1] = k * b * d[i]; }
+  }
+  return t => {
+    if (t <= x[0]) return y[0];
+    if (t >= x[n - 1]) return y[n - 1];
+    let i = 0; while (t > x[i + 1]) i++;
+    const hh = x[i + 1] - x[i], u = (t - x[i]) / hh, u2 = u * u, u3 = u2 * u;
+    return (2 * u3 - 3 * u2 + 1) * y[i] + (u3 - 2 * u2 + u) * hh * m[i] + (-2 * u3 + 3 * u2) * y[i + 1] + (u3 - u2) * hh * m[i + 1];
+  };
+}
+const C0 = T.click + 0.02;
+// Camera path: the reference's fly-in (globe, region, horizon tilt, descent, title, oblique, neon),
+// compressed from 13 s to about 6 s and aimed at Ibadan.
+const camLogRange = monotone([[C0, Math.log(46000)], [T.regional, Math.log(2400)], [T.regional + 0.3, Math.log(1250)],
+  [6.55, Math.log(600)], [6.95, Math.log(200)], [7.95, Math.log(95)], [8.9, Math.log(46)], [DURATION, Math.log(38)]]);
+const camLon = monotone([[C0, -14], [T.regional, 3.4], [T.regional + 0.3, 3.85], [6.55, 3.93], [6.95, IBADAN[0]], [7.95, 3.94], [8.9, 3.962], [DURATION, 3.97]]);
+const camLat = monotone([[C0, 4.0], [T.regional, 8.3], [T.regional + 0.3, 7.95], [6.55, 7.5], [6.95, IBADAN[1]], [7.95, 7.385], [8.9, 7.402], [DURATION, 7.408]]);
+const camPitch = monotone([[C0, 0], [6.0, 0], [6.22, 66], [6.38, 66], [6.6, 0], [7.95, 0], [8.85, 50], [DURATION, 54]]);
+const camHeading = monotone([[C0, 0], [7.95, 0], [8.85, 33], [DURATION, 37]]);
+
+const v3 = {
+  add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+  sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+  mul: (a, k) => [a[0] * k, a[1] * k, a[2] * k],
+  dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+  cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+  norm: a => { const l = Math.hypot(a[0], a[1], a[2]); return [a[0] / l, a[1] / l, a[2] / l]; },
+};
+function ecef(lon, lat, r = RE) {
+  const la = lat * Math.PI / 180, lo = lon * Math.PI / 180;
+  return [r * Math.cos(la) * Math.cos(lo), r * Math.cos(la) * Math.sin(lo), r * Math.sin(la)];
+}
+function earthCam(t) {
+  const lon = camLon(t), lat = camLat(t), range = Math.exp(camLogRange(t));
+  const pitch = camPitch(t) * Math.PI / 180, head = camHeading(t) * Math.PI / 180;
+  const P = ecef(lon, lat), U = v3.norm(P);
+  const lo = lon * Math.PI / 180, la = lat * Math.PI / 180;
+  const Ea = [-Math.sin(lo), Math.cos(lo), 0];
+  const No = [-Math.sin(la) * Math.cos(lo), -Math.sin(la) * Math.sin(lo), Math.cos(la)];
+  const Nh = v3.add(v3.mul(No, Math.cos(head)), v3.mul(Ea, Math.sin(head)));
+  const off = v3.add(v3.mul(U, Math.cos(pitch)), v3.mul(Nh, -Math.sin(pitch)));
+  const pos = v3.add(P, v3.mul(off, range));
+  const fwd = v3.mul(off, -1);
+  const up = v3.norm(v3.add(v3.mul(Nh, Math.cos(pitch)), v3.mul(U, Math.sin(pitch))));
+  const right = v3.norm(v3.cross(fwd, up));
+  const cloudAmt = clamp((range - 2600) / 7000);
+  const dim = 0.84 * E.inOutSine(prog(t, T.neon - 0.15, T.neon + 0.15));
+  return {
+    pos, fwd, up, right, range,
+    gl: { pos, right, up, fwd, tanH: TAN_H, localBox: VEC.box, ibadan: IBADAN, cloudAmt, dim },
+  };
+}
+// Project a lon/lat on the ground to screen pixels; null when behind or too close to the camera.
+function project(c, lon, lat) {
+  const v = v3.sub(ecef(lon, lat), c.pos);
+  const z = v3.dot(v, c.fwd);
+  if (z < 0.3) return null;
+  const sx = v3.dot(v, c.right) / (z * TAN_H * ASPECT), sy = v3.dot(v, c.up) / (z * TAN_H);
+  return [(sx + 1) / 2 * W, (1 - sy) / 2 * H];
+}
+function screenPath(c, pts) {
+  let d = '', pen = false;
+  for (const [lo, la] of pts) {
+    const q = project(c, lo, la);
+    if (!q || Math.abs(q[0]) > 6000 || Math.abs(q[1]) > 9000) { pen = false; continue; }
+    d += (pen ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1);
+    pen = true;
+  }
+  return d;
+}
+// Routes built from Natural Earth segments; names only where the geometry confirms them.
+// At each fork, follow the segment whose far end gets closest to the destination city.
+const key = p => p[0].toFixed(3) + ',' + p[1].toFixed(3);
+function route(startPt, dest, pred) {
+  const segs = VEC.roads.filter(pred).map(r => r.pts);
+  const out = [startPt];
+  let cur = key(startPt), curPt = startPt;
+  const dist = p => Math.hypot(p[0] - dest[0], p[1] - dest[1]);
+  for (let guard = 0; guard < 20; guard++) {
+    const cands = segs.map((sg, i) => [sg, i]).filter(([sg]) => key(sg[0]) === cur || key(sg[sg.length - 1]) === cur)
+      .map(([sg, i]) => { const s2 = key(sg[0]) === cur ? sg : [...sg].reverse(); return [s2, i]; })
+      .filter(([s2]) => dist(s2[s2.length - 1]) < dist(curPt));
+    if (!cands.length) break;
+    cands.sort((x, y) => dist(x[0][x[0].length - 1]) - dist(y[0][y[0].length - 1]));
+    const [s2, i] = cands[0];
+    segs.splice(i, 1);
+    out.push(...s2.slice(1));
+    curPt = s2[s2.length - 1]; cur = key(curPt);
+    if (dist(curPt) < 0.05) break;
+  }
+  return out;
+}
+const LAGOS = [3.398, 6.581], IFE = [4.548, 7.455], OYO = [3.938, 7.814];
+const ROUTE_LAGOS = route(JUNCTION, LAGOS, r => r.expressway === 1);
+const ROUTE_IFE = route(JUNCTION, IFE, r => r.expressway === 1);
+const ROUTE_OYO = route(JUNCTION, OYO, () => true);
+const baseRoadEls = VEC.roads.map(r => {
+  const el = document.createElementNS(NS, 'path');
+  el.setAttribute('stroke-width', r.expressway ? 5 : 3);
+  $('roadsBase').appendChild(el);
+  return { el, r };
+});
+// Labels sit on the visible stretch of each road, measured in screen pixels from the junction.
+const LABELS = [
+  { text: 'TOWARDS LAGOS', route: ROUTE_LAGOS, s0: 90, s1: 560, t0: 9.5, dy: -34 },
+  { text: 'TOWARDS IFE', route: ROUTE_IFE, s0: 150, s1: 520, t0: 9.68, dy: -34 },
+  { text: 'TOWARDS OYO', route: ROUTE_OYO, s0: 240, s1: 640, t0: 9.84, dy: 0 },
+];
+LABELS.forEach((L, i) => {
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('id', `labelPath${i}`);
+  path.setAttribute('fill', 'none');
+  $('roadLabels').appendChild(path);
+  const text = document.createElementNS(NS, 'text');
+  if (L.dy) text.setAttribute('dy', L.dy);
+  const tp = document.createElementNS(NS, 'textPath');
+  tp.setAttribute('href', `#labelPath${i}`);
+  tp.setAttribute('startOffset', '50%');
+  tp.setAttribute('text-anchor', 'middle');
+  tp.setAttribute('dominant-baseline', 'central');
+  L.spans = [...L.text].map(ch => { const s = document.createElementNS(NS, 'tspan'); s.textContent = ch; tp.appendChild(s); return s; });
+  text.appendChild(tp);
+  $('roadLabels').appendChild(text);
+  L.path = path;
+});
+const TITLE_CITY = 'IBADAN';
+const citySpans = [...TITLE_CITY].map(ch => { const s = document.createElementNS(NS, 'tspan'); s.textContent = ch; $('cityTitle').appendChild(s); return s; });
+const RING_TEXT = 'IBADAN';
+$('ringLabel').textContent = RING_TEXT;
+
+// The stretch of a route between s0 and s1 screen pixels along it, densified so it follows
+// the road, and turned to read left to right.
+function labelPath(c, pts, s0, s1) {
+  const q = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    for (let k = 0; k < 24; k++) {
+      const u = k / 24;
+      const p = project(c, lerp(pts[i][0], pts[i + 1][0], u), lerp(pts[i][1], pts[i + 1][1], u));
+      if (p) q.push(p);
+    }
+  }
+  const out = [];
+  let acc = 0;
+  for (let i = 0; i < q.length; i++) {
+    if (i) acc += Math.hypot(q[i][0] - q[i - 1][0], q[i][1] - q[i - 1][1]);
+    if (acc >= s0 && acc <= s1 && q[i][0] > -200 && q[i][0] < W + 200 && q[i][1] > -200 && q[i][1] < H + 200) out.push(q[i]);
+  }
+  if (out.length < 2) return '';
+  if (out[out.length - 1][0] < out[0][0]) out.reverse();
+  // Chaikin corner cutting so glyphs do not spread apart at the road's bends
+  let sm = out.filter((p, i) => i % 6 === 0 || i === out.length - 1);
+  for (let it = 0; it < 4; it++) {
+    const nx = [sm[0]];
+    for (let i = 0; i < sm.length - 1; i++) {
+      const [a0, a1] = sm[i], [b0, b1] = sm[i + 1];
+      nx.push([0.75 * a0 + 0.25 * b0, 0.75 * a1 + 0.25 * b1], [0.25 * a0 + 0.75 * b0, 0.25 * a1 + 0.75 * b1]);
+    }
+    nx.push(sm[sm.length - 1]);
+    sm = nx;
+  }
+  return sm.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('');
+}
+
+function worldOverlay(t, c) {
+  // City title: a soft gradient sweeps the letters on, then off, as in the reference.
+  const sIn = lerp(-1.5, TITLE_CITY.length + 0.5, E.inOutSine(prog(t, T.title - 0.07, T.title + 0.33)));
+  const sOut = lerp(-1.5, TITLE_CITY.length + 0.5, E.inOutSine(prog(t, 7.6, 7.94)));
+  citySpans.forEach((sp, i) => {
+    const a = clamp((sIn - i) / 1.5) * (1 - clamp((sOut - i) / 1.5));
+    sp.setAttribute('fill-opacity', a.toFixed(3));
+  });
+  show($('cityTitle'), t > T.title - 0.1 && t < 7.96);
+
+  // Base road network fades up as the city comes close.
+  const roadsOn = E.inOutSine(prog(t, T.neon - 0.1, T.neon + 0.3));
+  show($('roadsBase'), roadsOn > 0);
+  if (roadsOn > 0) {
+    set($('roadsBase'), { opacity: (0.5 * roadsOn).toFixed(3) });
+    for (const o of baseRoadEls) o.el.setAttribute('d', screenPath(c, o.r.pts));
+  }
+
+  // Neon: the Lagos-Ibadan Expressway in brand blue, the road toward Ife in white.
+  const nA = E.inOutCubic(prog(t, T.neon - 0.02, T.neon + 0.55));
+  const nB = E.inOutCubic(prog(t, T.neon2 - 0.02, T.neon2 + 0.5));
+  show($('neonA'), nA > 0); show($('neonB'), nB > 0);
+  if (nA > 0) {
+    const dA = screenPath(c, ROUTE_LAGOS);
+    for (const id of ['neonAGlow', 'neonACore']) set($(id), { d: dA, 'stroke-dashoffset': (1 - nA).toFixed(4) });
+  }
+  if (nB > 0) {
+    const dB = screenPath(c, ROUTE_IFE);
+    for (const id of ['neonBGlow', 'neonBCore']) set($(id), { d: dB, 'stroke-dashoffset': (1 - nB).toFixed(4) });
+  }
+
+  // Labels arrive letter by letter along their roads.
+  LABELS.forEach(L => {
+    const on = t >= L.t0;
+    L.path.setAttribute('d', on ? labelPath(c, L.route, L.s0, L.s1) : '');
+    L.spans.forEach((sp, i) => sp.setAttribute('fill-opacity', clamp((t - L.t0 - i * 0.012) / 0.08).toFixed(3)));
+  });
+
+  // Junction ring with its curved label.
+  const rU = E.inOutCubic(prog(t, 9.62, 9.98));
+  show($('ring'), rU > 0);
+  if (rU > 0) {
+    const ring = [], arc = [];
+    for (let k = 0; k <= 64; k++) {
+      const a = (k / 64) * Math.PI * 2;
+      const lo = JUNCTION[0] + (1.3 * Math.cos(a)) / (111.32 * Math.cos(JUNCTION[1] * Math.PI / 180));
+      const la = JUNCTION[1] + (1.3 * Math.sin(a)) / 110.57;
+      const q = project(c, lo, la); if (q) ring.push(q);
+      const lo2 = JUNCTION[0] + (1.9 * Math.cos(a)) / (111.32 * Math.cos(JUNCTION[1] * Math.PI / 180));
+      const la2 = JUNCTION[1] + (1.9 * Math.sin(a)) / 110.57;
+      const q2 = project(c, lo2, la2); if (q2) arc.push(q2);
+    }
+    const toD = pts => pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('');
+    set($('ringPath'), { d: toD(ring), 'stroke-dashoffset': (1 - rU).toFixed(4) });
+    // label on the upper half of the outer ellipse, reading left to right
+    const top = arc.filter(p => p[1] <= Math.min(...arc.map(q => q[1])) + (Math.max(...arc.map(q => q[1])) - Math.min(...arc.map(q => q[1]))) * 0.5)
+      .sort((a, b) => a[0] - b[0]);
+    set($('ringArc'), { d: toD(top) });
+    set($('ringLabel'), { 'fill-opacity': clamp((t - 9.86) / 0.1).toFixed(3) });
+  }
+}
+
 // ------------------------------------------------------------------ seek
 const PILL = { x: 62, w: 800, h: 132, y: 640 };
 const BTN_R = 66;
@@ -338,7 +589,7 @@ function seek(t) {
     opacity: t >= burstT[0] - 0.12 && nSel === 0 && blinkOn ? 1 : 0 });
 
   // ---------------- Scene B: search pill drops in over the sky (2.84-4.95)
-  show($('sceneB'), t >= T.whip - 0.1 && t < T.map);
+  show($('sceneB'), t >= T.whip - 0.1 && t < T.click + 0.2);
   const pillU = settleHit(t, T.whip - 0.02, T.pill_land, 0.024, 0.6);
   const pillDrift = 26 * E.inOutSine(prog(t, T.pill_land + 0.2, 4.0));
   const py = lerp(-220, PILL.y, pillU) + pillDrift;
@@ -367,7 +618,7 @@ function seek(t) {
   const press = 1 - 0.14 * E.inQuad(prog(t, T.click - 0.08, T.click));
   const release = settle(prog(t, T.click, T.click + 0.24), 0.045, 0.45);
   const bk = t < T.click ? press : lerp(0.86, 1, release);
-  br *= bk;
+  br *= bk * (1 - E.inCubic(prog(t, T.click + 0.03, T.click + 0.17)));
   set($('btnCircle'), { cx: bx.toFixed(1), cy: by.toFixed(1), r: br.toFixed(2) });
   const arrowK = 1 - E.inOutCubic(prog(t, 4.06, 4.16));
   set($('btnArrow'), { transform: `translate(${bx.toFixed(1)} ${by.toFixed(1)}) scale(${(arrowK * br / BTN_R).toFixed(3)})`, opacity: arrowK > 0.01 ? 1 : 0 });
@@ -386,19 +637,23 @@ function seek(t) {
   show($('mark'), t < T.click + 0.23);
 
   // Cursor glides in, presses on the measured click, then leaves.
-  show($('cursor'), t >= 4.04 && t < T.click + 0.43);
+  show($('cursor'), t >= 4.04 && t < T.click + 0.31);
   const cu = E.outCubic(prog(t, 4.04, T.click - 0.07));
   const p0 = [1130, 1720], p1 = [930, 1200], p2 = [CX + 14, 1010 + 18];
   const cxp = (1 - cu) * (1 - cu) * p0[0] + 2 * (1 - cu) * cu * p1[0] + cu * cu * p2[0];
   const cyp = (1 - cu) * (1 - cu) * p0[1] + 2 * (1 - cu) * cu * p1[1] + cu * cu * p2[1];
   const ck = t < T.click ? 1 - 0.1 * E.inQuad(prog(t, T.click - 0.08, T.click)) : lerp(0.9, 1, release);
-  const exitU = E.inCubic(prog(t, T.click + 0.12, T.click + 0.42));
+  const exitU = E.inCubic(prog(t, T.click + 0.06, T.click + 0.3));
   set($('cursor'), { transform: `translate(${(cxp + 260 * exitU).toFixed(1)} ${(cyp + 520 * exitU).toFixed(1)}) scale(${(1.25 * ck).toFixed(3)})` });
 
-  // The click opens the results: paper grows out of the button.
-  const ru = E.inOutCubic(prog(t, T.click + 0.02, T.map - 0.05));
-  show($('reveal'), t >= T.click && t < T.map);
-  set($('reveal'), { cx: CX, cy: 1010, r: (2250 * ru).toFixed(1) });
+  // (the old paper reveal is parked with the old story)
+  show($('reveal'), false);
+
+  // ---------------- Scene W: the world transition (4.52-10.50)
+  const W_ON = t >= T.click + 0.02;
+  const cam = W_ON ? earthCam(t) : null;
+  show($('sceneW'), W_ON);
+  if (W_ON) worldOverlay(t, cam);
 
   // ---------------- Scene D1: map, title, pin (4.94-6.93)
   const holeU = prog(t, T.terrain - 0.18, T.terrain + 0.42);
@@ -460,9 +715,16 @@ function seek(t) {
 
   // ---------------- GL plates
   let glState = null;
-  if (t >= T.whip - 0.18 && t < T.map) {
-    const u = prog(t, T.whip - 0.18, T.map);
+  if (t >= T.whip - 0.18 && t < T.click + 0.6) {
+    const u = prog(t, T.whip - 0.18, T.click + 0.6);
     glState = { mode: 0, camH: lerp(700, 380, E.inOutSine(u)), pitch: lerp(0.05, 0.17, E.inOutSine(u)), travel: t * 160 };
+    if (W_ON) {
+      // the button opens onto space: earth inside a growing circle, sky outside
+      const ru = E.inOutCubic(prog(t, T.click + 0.02, T.click + 0.42));
+      glState = { ...glState, mode: 3, earth: { ...cam.gl, reveal: [CX, H - 1010, 2300 * ru] } };
+    }
+  } else if (W_ON) {
+    glState = { mode: 2, earth: { ...cam.gl, reveal: [0, 0, -1] } };
   } else if (t >= T_LAND0 - 0.02) {
     const L = landCam(t);
     const wu2 = prog(t, T_LAND0, T.terrain + 0.42);
@@ -472,8 +734,8 @@ function seek(t) {
   if (glState) drawGL(glState);
 
   // ---------------- Scene E: survey, chosen plot, property card (6.80-9.00)
-  show($('sceneE'), t >= 6.8);
-  if (t >= 6.8) {
+  show($('sceneE'), t >= T.terrain + 0.3);
+  if (t >= T.terrain + 0.3) {
     const L = landCam(t);
     set($('survey'), {
       transform: `translate(${CX} ${CY}) rotate(${(-L.rot * 180 / Math.PI).toFixed(4)}) scale(${L.px.toFixed(5)}) translate(${(-L.cam[0]).toFixed(4)} ${(-L.cam[1]).toFixed(4)})`,
