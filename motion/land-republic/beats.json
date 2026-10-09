@@ -1,0 +1,208 @@
+{
+ "source": "build/audio/music.wav",
+ "method": "2 ms log-energy flux, comb search around nominal tempo, least-squares fit through onsets within 15 ms of the grid, refit without onsets more than 3 ms off",
+ "nominalBpm": 120,
+ "bpm": 120,
+ "period": 0.500001,
+ "offset": 0.00015,
+ "beatsDetected": 22,
+ "rejected": [
+  2,
+  5,
+  26,
+  28,
+  29,
+  39
+ ],
+ "maxResidualMs": 0.83,
+ "beats": [
+  0.00015,
+  0.50015,
+  1.00015,
+  1.50016,
+  2.00016,
+  2.50016,
+  3.00016,
+  3.50016,
+  4.00016,
+  4.50016,
+  5.00017,
+  5.50017,
+  6.00017,
+  6.50017,
+  7.00017,
+  7.50017,
+  8.00017,
+  8.50018,
+  9.00018,
+  9.50018,
+  10.00018,
+  10.50018,
+  11.00018,
+  11.50018,
+  12.00019,
+  12.50019,
+  13.00019,
+  13.50019,
+  14.00019,
+  14.50019,
+  15.0002,
+  15.5002,
+  16.0002,
+  16.5002,
+  17.0002,
+  17.5002,
+  18.0002,
+  18.50021,
+  19.00021,
+  19.50021,
+  20.00021
+ ],
+ "downbeats": [
+  0.00015,
+  2.00016,
+  4.00016,
+  6.00017,
+  8.00017,
+  10.00018,
+  12.00019,
+  14.00019,
+  16.0002,
+  18.0002,
+  20.00021
+ ],
+ "onsets": [
+  {
+   "k": 8,
+   "t": 4,
+   "strength": 8.9,
+   "residualMs": -0.16
+  },
+  {
+   "k": 9,
+   "t": 4.5,
+   "strength": 1.32,
+   "residualMs": -0.16
+  },
+  {
+   "k": 11,
+   "t": 5.5,
+   "strength": 1.09,
+   "residualMs": -0.17
+  },
+  {
+   "k": 12,
+   "t": 6.001,
+   "strength": 0.54,
+   "residualMs": 0.83
+  },
+  {
+   "k": 13,
+   "t": 6.5,
+   "strength": 1.85,
+   "residualMs": -0.17
+  },
+  {
+   "k": 14,
+   "t": 7,
+   "strength": 0.78,
+   "residualMs": -0.17
+  },
+  {
+   "k": 15,
+   "t": 7.5,
+   "strength": 2.34,
+   "residualMs": -0.17
+  },
+  {
+   "k": 16,
+   "t": 8,
+   "strength": 0.81,
+   "residualMs": -0.17
+  },
+  {
+   "k": 17,
+   "t": 8.5,
+   "strength": 1.69,
+   "residualMs": -0.18
+  },
+  {
+   "k": 18,
+   "t": 9,
+   "strength": 0.88,
+   "residualMs": -0.18
+  },
+  {
+   "k": 19,
+   "t": 9.5,
+   "strength": 2.38,
+   "residualMs": -0.18
+  },
+  {
+   "k": 20,
+   "t": 10,
+   "strength": 0.94,
+   "residualMs": -0.18
+  },
+  {
+   "k": 21,
+   "t": 10.5,
+   "strength": 1.03,
+   "residualMs": -0.18
+  },
+  {
+   "k": 22,
+   "t": 11.001,
+   "strength": 0.56,
+   "residualMs": 0.82
+  },
+  {
+   "k": 23,
+   "t": 11.5,
+   "strength": 0.46,
+   "residualMs": -0.18
+  },
+  {
+   "k": 25,
+   "t": 12.501,
+   "strength": 0.84,
+   "residualMs": 0.81
+  },
+  {
+   "k": 27,
+   "t": 13.501,
+   "strength": 0.55,
+   "residualMs": 0.81
+  },
+  {
+   "k": 32,
+   "t": 16,
+   "strength": 0.44,
+   "residualMs": -0.2
+  },
+  {
+   "k": 33,
+   "t": 16.5,
+   "strength": 0.89,
+   "residualMs": -0.2
+  },
+  {
+   "k": 34,
+   "t": 17,
+   "strength": 0.62,
+   "residualMs": -0.2
+  },
+  {
+   "k": 35,
+   "t": 17.5,
+   "strength": 0.76,
+   "residualMs": -0.2
+  },
+  {
+   "k": 36,
+   "t": 18,
+   "strength": 8.28,
+   "residualMs": -0.2
+  }
+ ]
+}

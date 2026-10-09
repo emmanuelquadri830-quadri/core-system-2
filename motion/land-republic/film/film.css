@@ -1,0 +1,102 @@
+/* Brand tokens are filled in from assets/manifest.json at load. The values
+   here are neutral stand-ins so a missing manifest is obvious, not pretty. */
+:root {
+  --accent: #808080;
+  --ink: #111111;
+  --paper: #f2f2f2;
+  --display: 'Inter Display', 'Inter', sans-serif;
+  --ui: 'Inter', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: #000;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+#stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--ui);
+  contain: strict;
+}
+
+#stage > .scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.shot {
+  position: absolute;
+  overflow: hidden;
+  transform-origin: 50% 50%;
+  background: #1a1a1a;
+}
+
+.shot > img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  max-width: none;
+}
+
+.display {
+  font-family: var(--display);
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.word {
+  position: absolute;
+  display: block;
+  transform-origin: 0 100%;
+  white-space: nowrap;
+}
+
+.mask {
+  position: absolute;
+  overflow: hidden;
+}
+
+.cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  transform-origin: 6px 4px;
+  z-index: 50;
+}
+
+#dock {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font: 13px/1 system-ui, sans-serif;
+  color: #fff;
+  z-index: 100;
+}
+
+#dock input[type=range] { flex: 1; }
+
+#dock[hidden] { display: none; }

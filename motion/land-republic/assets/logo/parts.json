@@ -1,0 +1,79 @@
+{
+ "scale": 8,
+ "w": 904,
+ "h": 320,
+ "markCenter": [
+  142,
+  150
+ ],
+ "parts": [
+  {
+   "name": "top",
+   "file": "logo/mark-top.png",
+   "x": 107,
+   "y": 19,
+   "w": 78,
+   "h": 115,
+   "cx": 145.5,
+   "cy": 75.5
+  },
+  {
+   "name": "upper-left",
+   "file": "logo/mark-upper-left.png",
+   "x": 35,
+   "y": 67,
+   "w": 97,
+   "h": 84,
+   "cx": 82.8,
+   "cy": 108.9
+  },
+  {
+   "name": "upper-right",
+   "file": "logo/mark-upper-right.png",
+   "x": 161,
+   "y": 67,
+   "w": 95,
+   "h": 83,
+   "cx": 208.1,
+   "cy": 108.2
+  },
+  {
+   "name": "lower-left",
+   "file": "logo/mark-lower-left.png",
+   "x": 12,
+   "y": 137,
+   "w": 113,
+   "h": 78,
+   "cx": 68.0,
+   "cy": 176.1
+  },
+  {
+   "name": "lower-right",
+   "file": "logo/mark-lower-right.png",
+   "x": 168,
+   "y": 138,
+   "w": 113,
+   "h": 77,
+   "cx": 223.8,
+   "cy": 175.7
+  },
+  {
+   "name": "stem",
+   "file": "logo/mark-stem.png",
+   "x": 114,
+   "y": 161,
+   "w": 65,
+   "h": 122,
+   "cx": 145.9,
+   "cy": 224.6
+  },
+  {
+   "name": "wordmark",
+   "file": "logo/wordmark.png",
+   "x": 336,
+   "y": 0,
+   "w": 551,
+   "h": 320
+  }
+ ]
+}
