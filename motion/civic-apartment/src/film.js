@@ -5,8 +5,9 @@ import { scene1 } from './scene1.js';
 import { scene2 } from './scene2.js';
 import { scene3 } from './scene3.js';
 import { scene4 } from './scene4.js';
+import { scene5 } from './scene5.js';
 
-const SCENES = [scene1, scene2, scene3, scene4];
+const SCENES = [scene1, scene2, scene3, scene4, scene5];
 
 const MOTION_BLUR_SAMPLES = 6;
 const SHUTTER = 0.5 / FPS; // 180 degree shutter
@@ -132,7 +133,10 @@ async function seek(t) {
     actx.globalAlpha = 1;
     actx.drawImage(workCanvas, 0, 0);
   }
-  applyGrain(actx, frame);
+  // A scene can hold still to the end (scene5.holdFrom): the grain freezes
+  // with it, so every held frame is identical.
+  const grainFrame = scene.holdFrom !== undefined && t >= scene.holdFrom ? Math.round(scene.holdFrom * FPS) : frame;
+  applyGrain(actx, grainFrame);
   out.drawImage(accCanvas, 0, 0);
   return frame;
 }

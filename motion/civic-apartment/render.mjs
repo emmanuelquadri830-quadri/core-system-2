@@ -1,4 +1,4 @@
-// node render.mjs [--from 0] [--to 15] [--out out/film.mp4] [--audio audio/mix.wav]
+// node render.mjs [--from 0] [--to 15] [--out out/film.mp4] [--audio audio/mix.wav] [--hold 13.5]
 //                 [--still 1.2 --out out/still.png]
 // Seeks the film frame by frame in headless Chromium and pipes PNGs to ffmpeg:
 // H.264, yuv420p, CRF 16, BT.709 tags, faststart.
@@ -70,6 +70,10 @@ if (args.still !== undefined) {
   ff.push(
     '-vf', 'scale=out_color_matrix=bt709:out_range=tv,format=yuv420p',
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-pix_fmt', 'yuv420p',
+    // --hold T: the picture is still from T to the end. A keyframe at T, coded
+    // finer than usual, leaves the following frames nothing to refine, so
+    // every held frame decodes identically.
+    ...(args.hold !== undefined ? ['-force_key_frames', String(Number(args.hold) - from), '-x264-params', 'ipratio=2.5'] : []),
     '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
     '-r', String(FPS), '-frames:v', String(f1 - f0),
   );

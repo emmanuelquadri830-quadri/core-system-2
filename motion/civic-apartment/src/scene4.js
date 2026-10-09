@@ -21,8 +21,21 @@ const B = beatTime;
 
 const PAPER = '#F4F2F0';
 const INK = COLOR.ink;
-// Red Hat Display has no naira sign; Inter, listed second, supplies it.
-const font = (size, weight = 500) => `${weight} ${size}px "Red Hat Display", Inter`;
+const font = (size, weight = 500) => `${weight} ${size}px "Red Hat Display"`;
+
+// Red Hat Display has no naira sign and the film uses no other face, so the
+// sign is built from the font's own N with two bars at its stem weight.
+// Returns the x where the figures continue.
+function drawNaira(ctx, x, baseline, size) {
+  ctx.font = font(size);
+  const m = ctx.measureText('N');
+  ctx.fillText('N', x, baseline);
+  const cap = ctx.measureText('H').actualBoundingBoxAscent;
+  const bar = 0.072 * size, over = 0.05 * size;
+  const left = x - m.actualBoundingBoxLeft - over, right = x + m.actualBoundingBoxRight + over;
+  for (const at of [0.37, 0.63]) ctx.fillRect(left, baseline - cap * at - bar / 2, right - left, bar);
+  return x + m.width + over;
+}
 
 // Words, exactly as supplied.
 const LABEL = [[{ text: 'Outright' }, { text: 'from' }]];
@@ -128,16 +141,11 @@ function drawCard(ctx, t, i) {
   const kp = easeIn(span(t, t0 + 0.06, 0.5));
   const cap = ctx.measureText('H').actualBoundingBoxAscent;
   ctx.fillText(kind, x + CARD.pad, y + CARD.pad + cap + (1 - kp) * 30);
-  // The naira sign comes from Inter at its regular weight, which matches
-  // the stroke of Red Hat Display's medium figures; the figures follow it.
   const py = y + CARD.h - CARD.pad - 8 + (1 - kp) * 60;
   ctx.fillStyle = INK;
-  ctx.font = `400 ${CARD.price}px Inter`;
-  ctx.fillText(price[0], x + CARD.pad - 4, py);
-  const sign = ctx.measureText(price[0]).width;
-  ctx.font = font(CARD.price);
+  const after = drawNaira(ctx, x + CARD.pad, py, CARD.price); // price[0] is the naira sign
   ctx.letterSpacing = `${(-0.02 * CARD.price).toFixed(2)}px`;
-  ctx.fillText(price.slice(1), x + CARD.pad - 4 + sign + 2, py);
+  ctx.fillText(price.slice(1), after, py);
   ctx.restore();
 }
 

@@ -1,8 +1,9 @@
-// Synthesized score and sound effects at 118 BPM, written to audio/mix-raw.wav,
-// then normalised to -14 LUFS integrated with peaks under -1 dBTP (audio/mix.wav).
-// Also writes beats.json, the beat grid every cut and hit is placed on.
-// Seeded noise only; the output is identical on every run.
-//   node audio/score.mjs [--to 2.533]
+// The film's sound: an Afro-house instrumental at 118 BPM with a log drum,
+// synthesized here (so it is royalty-free), and five sound effects placed on
+// the frames they belong to. Writes audio/mix-raw.wav, then audio/mix.wav at
+// -14 LUFS integrated with true peak under -1 dBTP, and beats.json, the grid
+// every cut and hit sits on. Seeded noise only: identical on every run.
+//   node audio/score.mjs [--to 15]
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -14,7 +15,7 @@ const SR = 48000;
 const toArg = process.argv.indexOf('--to');
 const LENGTH = toArg > 0 ? Number(process.argv[toArg + 1]) : DURATION;
 const N = Math.round(LENGTH * SR);
-const L = new Float32Array(N), R = new Float32Array(N);
+const B = beatTime;
 
 // ---------------------------------------------------------------------------
 // Beat grid.
@@ -25,236 +26,317 @@ for (let n = 0; beatTime(n) < DURATION; n++) {
 fs.writeFileSync(path.join(ROOT, 'beats.json'), JSON.stringify({ bpm: BPM, beatSeconds: BEAT, fps: FPS, beats }, null, 2) + '\n');
 
 // ---------------------------------------------------------------------------
-const add = (i, l, r = l) => { if (i >= 0 && i < N) { L[i] += l; R[i] += r; } };
+// Buses, so the keys can duck under the kick and the effects sit apart.
+const bus = () => ({ L: new Float32Array(N), R: new Float32Array(N) });
+const drums = bus(), bass = bus(), keys = bus(), sfx = bus();
 const midi = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
-function kick(t0, gain = 0.9) {
-  const s0 = Math.round(t0 * SR);
-  let ph = 0;
-  for (let i = 0; i < SR * 0.45; i++) {
-    const t = i / SR;
-    const f = 44 + 110 * Math.exp(-t * 28);
-    ph += (2 * Math.PI * f) / SR;
-    const env = Math.exp(-t * 7.5) * Math.min(1, t * 900);
-    const click = Math.exp(-t * 400) * 0.25;
-    add(s0 + i, (Math.sin(ph) * env + click * Math.sin(ph * 6)) * gain);
-  }
-}
-
-function hat(t0, gain, seed) {
-  const rnd = mulberry32(seed);
-  const s0 = Math.round(t0 * SR);
-  let prev = 0;
-  for (let i = 0; i < SR * 0.06; i++) {
-    const n = rnd() * 2 - 1;
-    const hp = n - prev; prev = n; // crude high-pass
-    const env = Math.exp(-(i / SR) * 70);
-    add(s0 + i, hp * env * gain * 0.9, hp * env * gain);
-  }
-}
-
-// Pad: D minor 9, slow attack, gently detuned saws through a soft low-pass.
-function pad(t0, t1, gain) {
-  const notes = [38, 45, 53, 57, 60, 64]; // D2 A2 F3 A3 C4 E4
-  const s0 = Math.round(t0 * SR), s1 = Math.min(N, Math.round(t1 * SR));
-  const phases = notes.flatMap(() => [0, 0]);
-  let lpL = 0, lpR = 0;
-  for (let i = s0; i < s1; i++) {
-    const t = (i - s0) / SR;
-    const env = Math.min(1, 0.35 + t / 1.2) * Math.min(1, (s1 - i) / (SR * 0.3));
-    let l = 0, r = 0;
-    notes.forEach((m, k) => {
-      for (const [j, det] of [[0, -0.07], [1, 0.07]]) {
-        const idx = k * 2 + j;
-        phases[idx] += midi(m + det) / SR;
-        const saw = 2 * (phases[idx] % 1) - 1;
-        if (j === 0) l += saw; else r += saw;
-      }
-    });
-    const cut = 0.035 + 0.05 * Math.min(1, t / 2.2); // opens as the camera dives
-    lpL += cut * (l - lpL); lpR += cut * (r - lpR);
-    add(i, (lpL / notes.length) * gain * env, (lpR / notes.length) * gain * env);
-  }
-}
-
-// Riser: band of noise sweeping upward into the hit.
-function riser(t0, t1, gain, seed) {
-  const rnd = mulberry32(seed);
-  const s0 = Math.round(t0 * SR), s1 = Math.round(t1 * SR);
-  let a = 0, b = 0;
-  for (let i = s0; i < s1; i++) {
-    const k = (i - s0) / (s1 - s0);
-    const n = rnd() * 2 - 1;
-    const c = 0.01 + 0.25 * k * k;
-    a += c * (n - a); b += c * (a - b);
-    const band = a - b;
-    const env = Math.pow(k, 2.2) * gain;
-    add(i, band * env * (1 - 0.3 * k), band * env * (0.7 + 0.3 * k));
-  }
-}
-
-// Short air swish for text entrances.
-function swish(t0, dur, gain, seed) {
-  const rnd = mulberry32(seed);
-  const s0 = Math.round(t0 * SR), n = Math.round(dur * SR);
-  let a = 0;
-  for (let i = 0; i < n; i++) {
-    const k = i / n;
-    a += 0.18 * (rnd() * 2 - 1 - a);
-    const env = Math.sin(Math.PI * Math.pow(k, 0.6)) * gain;
-    add(s0 + i, a * env * (1.2 - k), a * env * (0.2 + k));
-  }
-}
-
-// Bright ping with a short echo tail, for the line landing.
-function ping(t0, gain) {
-  const s0 = Math.round(t0 * SR);
-  const partials = [[midi(74), 1], [midi(81), 0.5], [midi(86), 0.25], [midi(74) * 2.76, 0.12]];
-  const len = SR * 1.6;
-  const dry = new Float32Array(len);
-  for (let i = 0; i < len; i++) {
-    const t = i / SR;
-    let v = 0;
-    for (const [f, a] of partials) v += a * Math.sin(2 * Math.PI * f * t) * Math.exp(-t * (3 + f / 600));
-    dry[i] = v * Math.min(1, t * 2000);
-  }
-  for (let i = 0; i < len; i++) {
-    const e1 = i >= SR * 0.127 ? dry[i - Math.round(SR * 0.127)] * 0.35 : 0;
-    const e2 = i >= SR * 0.254 ? dry[i - Math.round(SR * 0.254)] * 0.18 : 0;
-    add(s0 + i, (dry[i] + e1) * gain, (dry[i] + e2) * gain);
-  }
-}
-
-function sub(t0, gain) {
-  const s0 = Math.round(t0 * SR);
-  let ph = 0;
-  for (let i = 0; i < SR * 1.2; i++) {
-    const t = i / SR;
-    ph += (2 * Math.PI * (36.7 + 20 * Math.exp(-t * 10))) / SR;
-    add(s0 + i, Math.sin(ph) * Math.exp(-t * 2.4) * Math.min(1, t * 400) * gain);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// SCENE 1 cue (0 to beat 5). The camera is already moving on frame 0, so the
-// pad starts already sounding and the first kick lands on beat 0.
-pad(0, LENGTH, 0.5);
-riser(0.15, beatTime(4), 0.5, 7);
-swish(0.08, 0.5, 0.22, 11);
-for (const n of [0, 1, 2, 3]) kick(beatTime(n), n === 0 ? 0.75 : 0.6);
-for (const n of [1.5, 2.5, 3.5]) hat(beatTime(n), 0.09, Math.round(100 + n * 2)); // offbeat hats
-kick(beatTime(4), 0.95);
-sub(beatTime(4), 0.55);
-ping(beatTime(4), 0.22);
-swish(beatTime(5) - 0.3, 0.32, 0.25, 13); // exit swish into the cut
-
-// ---------------------------------------------------------------------------
-// SCENE 2 sounds.
-
-// Electric draw: a resonant band of noise sweeping up, with a faint sine
-// glide under it, panned along the line as it draws.
-function zap(t0, dur, gain, seed, pan0 = -0.5, pan1 = 0.5, f0 = 700, f1 = 4200) {
-  const rnd = mulberry32(seed);
-  const s0 = Math.round(t0 * SR), n = Math.round(dur * SR);
-  let low = 0, band = 0, ph = 0;
-  for (let i = 0; i < n; i++) {
-    const k = i / n;
-    const f = f0 * Math.pow(f1 / f0, Math.pow(k, 0.7));
-    const c = 2 * Math.sin((Math.PI * Math.min(f, 7000)) / SR);
-    const x = rnd() * 2 - 1;
-    low += c * band;
-    const high = x - low - 0.25 * band;
-    band += c * high;
-    ph += (2 * Math.PI * f * 0.25) / SR;
-    const env = Math.pow(Math.sin(Math.PI * Math.min(1, k * 1.1)), 1.5) * gain;
-    const v = (band * 0.5 + 0.25 * Math.sin(ph)) * env;
-    const pan = pan0 + (pan1 - pan0) * k;
-    const a = ((pan + 1) * Math.PI) / 4;
-    add(s0 + i, v * Math.cos(a) * Math.SQRT2, v * Math.sin(a) * Math.SQRT2);
-  }
-}
-
-// Short tuned tick for labels.
-function tick(t0, m, gain, pan = 0) {
-  const s0 = Math.round(t0 * SR);
-  const f = midi(m);
+// Mono signal into a bus at time t0, constant-power pan.
+function place(b, t0, sig, gain = 1, pan = 0) {
   const a = ((pan + 1) * Math.PI) / 4;
-  for (let i = 0; i < SR * 0.25; i++) {
-    const t = i / SR;
-    const v = (Math.sin(2 * Math.PI * f * t) + 0.3 * Math.sin(4 * Math.PI * f * t)) * Math.exp(-t * 26) * Math.min(1, t * 3000) * gain;
-    add(s0 + i, v * Math.cos(a) * Math.SQRT2, v * Math.sin(a) * Math.SQRT2);
+  const gl = Math.cos(a) * Math.SQRT2 * gain, gr = Math.sin(a) * Math.SQRT2 * gain;
+  const s0 = Math.round(t0 * SR);
+  for (let i = 0; i < sig.length; i++) {
+    const j = s0 + i;
+    if (j < 0 || j >= N) continue;
+    b.L[j] += sig[i] * gl;
+    b.R[j] += sig[i] * gr;
   }
 }
 
-// The pin falling: a soft descending whistle into a low thud.
-function drop(tLand, gain) {
-  const fall = 0.2;
-  const s0 = Math.round((tLand - fall) * SR), n = Math.round(fall * SR);
+// RBJ biquad, fixed frequency.
+function biquad(sig, type, f, q = 0.707) {
+  const w = (2 * Math.PI * f) / SR, cw = Math.cos(w), al = Math.sin(w) / (2 * q);
+  let b0, b1, b2;
+  if (type === 'lp') { b0 = (1 - cw) / 2; b1 = 1 - cw; b2 = (1 - cw) / 2; }
+  else if (type === 'hp') { b0 = (1 + cw) / 2; b1 = -(1 + cw); b2 = (1 + cw) / 2; }
+  else { b0 = al; b1 = 0; b2 = -al; } // band-pass, peak gain 1
+  const a0 = 1 + al, a1 = -2 * cw, a2 = 1 - al;
+  const out = new Float32Array(sig.length);
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  for (let i = 0; i < sig.length; i++) {
+    const x = sig[i];
+    const y = (b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+    x2 = x1; x1 = x; y2 = y1; y1 = y;
+    out[i] = y;
+  }
+  return out;
+}
+const noise = (len, seed) => {
+  const r = mulberry32(seed);
+  return Float32Array.from({ length: Math.round(len * SR) }, () => r() * 2 - 1);
+};
+const env = (sig, fn) => sig.map((v, i) => v * fn(i / SR));
+
+// ---------------------------------------------------------------------------
+// Instruments.
+
+function kick(punch = 1) {
+  const n = Math.round(0.42 * SR), out = new Float32Array(n);
   let ph = 0;
   for (let i = 0; i < n; i++) {
-    const k = i / n;
-    ph += (2 * Math.PI * (1500 - 900 * k)) / SR;
-    add(s0 + i, Math.sin(ph) * k * k * 0.12 * gain);
-  }
-  const s1 = Math.round(tLand * SR);
-  let ph2 = 0;
-  for (let i = 0; i < SR * 0.3; i++) {
     const t = i / SR;
-    ph2 += (2 * Math.PI * (55 + 70 * Math.exp(-t * 30))) / SR;
-    add(s1 + i, Math.sin(ph2) * Math.exp(-t * 12) * Math.min(1, t * 1500) * gain);
+    ph += (2 * Math.PI * (46 + 120 * Math.exp(-t * 32))) / SR;
+    out[i] = (Math.sin(ph) * Math.exp(-t * 6.5) + 0.22 * punch * Math.exp(-t * 380) * Math.sin(ph * 7)) * Math.min(1, t * 1500);
+  }
+  return out;
+}
+
+function clap(seed) {
+  const n = noise(0.24, seed);
+  const shaped = env(n, (t) => {
+    const burst = [0, 0.011, 0.022].reduce((a, o) => a + (t >= o ? Math.exp(-(t - o) * 260) : 0), 0);
+    return 0.55 * burst + Math.exp(-t * 17) * (t > 0.022 ? 1 : 0);
+  });
+  return biquad(biquad(shaped, 'bp', 1300, 0.9), 'hp', 500);
+}
+
+const shaker = (seed) => env(biquad(noise(0.06, seed), 'hp', 6500), (t) => Math.min(1, t * 400) * Math.exp(-t * 55));
+const openHat = (seed) => env(biquad(noise(0.24, seed), 'hp', 8000), (t) => Math.min(1, t * 2000) * Math.exp(-t * 13));
+
+function conga(f, seed) {
+  const n = Math.round(0.24 * SR), out = new Float32Array(n);
+  const slap = biquad(noise(0.01, seed), 'bp', 2200, 1.2);
+  let ph = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    ph += (2 * Math.PI * f * (1 + 0.35 * Math.exp(-t * 60))) / SR;
+    out[i] = Math.sin(ph) * Math.exp(-t * 15) * Math.min(1, t * 2000) + (i < slap.length ? slap[i] * 0.35 : 0);
+  }
+  return out;
+}
+
+// The log drum: a woody, pitch-dropping bass hit with a soft knock on the
+// front, saturated so it speaks on small speakers.
+function logDrum(note, seed, len = 0.46) {
+  const f0 = midi(note);
+  const n = Math.round(len * SR), out = new Float32Array(n);
+  const knock = biquad(noise(0.012, seed), 'bp', 900, 1.4);
+  let ph = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    ph += (2 * Math.PI * f0 * (1 + 0.5 * Math.exp(-t * 55))) / SR;
+    const tone = Math.sin(ph) + 0.38 * Math.sin(2 * ph) + 0.12 * Math.sin(3 * ph);
+    const e = Math.min(1, t * 700) * Math.exp(-t * 6.2);
+    out[i] = Math.tanh(1.9 * tone * e) / Math.tanh(1.9) + (i < knock.length ? knock[i] * 0.3 : 0);
+  }
+  return biquad(out, 'lp', 1700);
+}
+
+// Short electric-piano chord stab.
+function stab(notes) {
+  const n = Math.round(0.5 * SR), out = new Float32Array(n);
+  for (const m of notes) {
+    const f = midi(m);
+    for (let i = 0; i < n; i++) {
+      const t = i / SR;
+      const w = 2 * Math.PI * f * t;
+      out[i] += (Math.sin(w) + 0.25 * Math.sin(2 * w) + 0.07 * Math.sin(3 * w)) * Math.exp(-t * 7.5) * Math.min(1, t * 400);
+    }
+  }
+  return out.map((v) => v / notes.length);
+}
+
+// Warm pad: detuned saws, one-pole low-pass, slow swell and release.
+function pad(notes, dur, cutoff, seed) {
+  const n = Math.round(dur * SR);
+  const L = new Float32Array(n), R = new Float32Array(n);
+  const r = mulberry32(seed);
+  const voices = notes.flatMap((m) => [-0.08, 0.08].map((d) => ({ f: midi(m + d), ph: r(), right: d > 0 })));
+  let lpL = 0, lpR = 0;
+  const c = 1 - Math.exp((-2 * Math.PI * cutoff) / SR);
+  for (let i = 0; i < n; i++) {
+    let l = 0, rr = 0;
+    for (const v of voices) {
+      v.ph = (v.ph + v.f / SR) % 1;
+      const s = 2 * v.ph - 1;
+      if (v.right) rr += s; else l += s;
+    }
+    lpL += c * (l - lpL);
+    lpR += c * (rr - lpR);
+    const t = i / SR;
+    const e = Math.min(1, t / 0.25) * Math.min(1, (dur - t) / 0.15);
+    L[i] = (lpL / notes.length) * e;
+    R[i] = (lpR / notes.length) * e;
+  }
+  return { L, R };
+}
+
+// ---------------------------------------------------------------------------
+// The track. D minor, one chord per bar: Dm9, Bbmaj7, Gm9, Asus4, round
+// again, ending on Dm9. Intro of percussion and pad under the map dive; the
+// log drum, claps and stabs drop in on beat 4 with the expressway's arrival;
+// a break while the end card's frame pulls back (beats 22.5 to 24); the
+// groove returns on the logo and fades out over the last 0.5 s.
+const CHORDS = [
+  { root: 38, notes: [50, 53, 57, 60, 64] }, // Dm9
+  { root: 34, notes: [46, 50, 53, 57] },     // Bbmaj7
+  { root: 31, notes: [43, 46, 50, 53, 57] }, // Gm9
+  { root: 33, notes: [45, 50, 52, 55] },     // Asus4
+];
+const chordAt = (beat) => (beat >= 28 ? CHORDS[0] : CHORDS[Math.floor(beat / 4) % 4]);
+const LAST_BEAT = Math.floor(LENGTH / BEAT);
+const inBreak = (beat) => beat >= 22.5 && beat < 24;
+const full = (beat) => beat >= 4 && !inBreak(beat);
+
+for (let bar = 0; bar * 4 <= LAST_BEAT; bar++) {
+  const ch = chordAt(bar * 4);
+  const p = pad(ch.notes, 4 * BEAT + 0.15, bar === 0 ? 700 : 1100, 40 + bar);
+  for (let i = 0; i < p.L.length; i++) {
+    const j = Math.round(B(bar * 4) * SR) + i;
+    if (j < N) { keys.L[j] += p.L[i] * 0.55; keys.R[j] += p.R[i] * 0.55; }
   }
 }
 
-// SCENE 2 cue (beat 5 to beat 10). The groove carries on; every graphic
-// gets its own sound on its own beat.
-for (const n of [5, 6, 7, 8, 9]) kick(beatTime(n), n === 8 ? 0.8 : 0.6);
-for (const n of [5.5, 6.5, 7.5, 8.5, 9.5]) hat(beatTime(n), 0.09, Math.round(300 + n * 2));
-for (const n of [8.25, 8.75, 9.25, 9.75]) hat(beatTime(n), 0.05, Math.round(400 + n * 4));
-zap(beatTime(5), 0.42, 0.42, 21, -0.7, 0.7);                       // expressway, west to east
-[0, 1, 2].forEach((i) => zap(beatTime(5.25) + i * 0.04, 0.3, 0.2, 31 + i, [-0.4, 0, 0.4][i], [-0.3, 0.1, 0.35][i], 1400, 5200)); // access roads
-zap(beatTime(5.5), 0.26, 0.22, 41, 0.3, -0.2, 1800, 3600);        // plot outline
-swish(beatTime(6), 0.3, 0.14, 43);                                 // plot fill
-drop(beatTime(6.5), 0.7);                                          // the pin lands
-ping(beatTime(6.5), 0.16);                                         // ripple rings
-riser(beatTime(7), beatTime(7) + 0.9, 0.12, 47);                   // radius circles widening
-[[7.25, 86, -0.45], [7.5, 89, 0.45], [7.75, 93, 0.35]].forEach(([n, m, pan]) => tick(beatTime(n), m, 0.16, pan)); // callouts
-swish(beatTime(8), 0.4, 0.22, 53);                                 // address slides out
-tick(beatTime(8) + 0.32, 81, 0.12);
-riser(beatTime(9) - 0.1, beatTime(10), 0.55, 57);                  // the frame opens
-swish(beatTime(9) + 0.1, 0.42, 0.3, 59);
+let seed = 1000;
+for (let s = 0; s <= LAST_BEAT * 4 + 3; s++) {
+  const beat = s / 4;
+  const t = B(beat);
+  if (t >= LENGTH) break;
+  const pos = s % 16; // sixteenth inside the bar
+  // shaker on every sixteenth, pushed on the offbeat ones
+  place(drums, t, shaker(seed++), [0.55, 0.3, 0.8, 0.35][s % 4] * 0.32, 0.25);
+  if (s % 4 === 0 && !inBreak(beat)) place(drums, t, kick(beat === 24 ? 1.4 : 1), 0.9);
+  if (!full(beat)) {
+    if (beat >= 2 && !inBreak(beat) && [3, 6, 9, 11, 14].includes(pos)) place(drums, t, conga([3, 9, 11].includes(pos) ? 330 : 220, seed++), 0.22, -0.3);
+    continue;
+  }
+  if (s % 8 === 4) place(drums, t, clap(seed++), 0.42, 0.05);
+  if (s % 4 === 2) place(drums, t, openHat(seed++), 0.12, -0.15);
+  if ([3, 6, 9, 11, 14].includes(pos)) place(drums, t, conga([3, 9, 11].includes(pos) ? 330 : 220, seed++), 0.22, -0.3);
+  // log drum: root, root, fifth, octave, root, seventh
+  const LOG = { 0: 0, 3: 0, 6: 7, 9: 12, 11: 0, 14: 10 };
+  if (pos in LOG) place(bass, t, logDrum(chordAt(beat).root + LOG[pos], seed++), pos === 0 ? 0.62 : 0.5);
+  // chord stabs on the offbeats
+  if ([2, 10, 15].includes(pos)) place(keys, t, stab(chordAt(beat).notes.map((m) => m + 12)), pos === 15 ? 0.16 : 0.26, pos === 10 ? 0.3 : -0.2);
+}
 
-// SCENE 3 cue (beat 10 to 8.0 s): the frame lands on the street; the type
-// and the detail cut get their own sounds.
-kick(beatTime(10), 0.85);
-sub(beatTime(10), 0.4);
-for (const n of [11, 12, 13, 14, 15]) kick(beatTime(n), n === 12 ? 0.75 : 0.58);
-for (const n of [10.5, 11.5, 12.5, 13.5, 14.5, 15.5]) hat(beatTime(n), 0.085, Math.round(500 + n * 2));
-swish(beatTime(10.5) - 0.05, 0.42, 0.2, 61);                       // title words rise
-tick(beatTime(11) + 0.05, 81, 0.1);                                // sub-line
-// the detail cut: a dry click on the cut, a glassy ping under it
-zap(beatTime(14.5) - 0.01, 0.05, 0.35, 67, 0, 0, 3000, 6000);
-tick(beatTime(14.5), 93, 0.14, 0.2);
-ping(beatTime(14.5) + 0.02, 0.1);
-swish(beatTime(15.5) - 0.08, 0.3, 0.16, 71);                       // back to the wide
+// A soft swell through the break, into the logo.
+{
+  const t0 = B(22.5), t1 = B(24);
+  const n = noise(t1 - t0, 77);
+  let low = 0, band = 0;
+  const out = new Float32Array(n.length);
+  for (let i = 0; i < n.length; i++) {
+    const k = i / n.length;
+    const c = 2 * Math.sin((Math.PI * (400 + 3000 * k * k)) / SR);
+    low += c * band; band += c * (n[i] - low - 0.4 * band);
+    out[i] = band * Math.pow(k, 2.2);
+  }
+  place(keys, t0, out, 0.32);
+}
 
-// SCENE 4 cue (8.0 s to beat 22.5): the groove halves under the prices so
-// the interface sounds are heard; each card, the control and every step of
-// the indicator gets its own click, rising to the stop on "12 months".
-const S4 = Math.round(beatTime(15.75) * FPS) / FPS;                // 8.0 s
-swish(S4 - 0.02, 0.42, 0.3, 81);                                   // the wipe, left to right
-kick(beatTime(16), 0.7);
-sub(beatTime(16), 0.22);
-for (const n of [18, 20, 22]) kick(beatTime(n), n === 20 ? 0.62 : 0.5);
-for (const n of [16.5, 17, 17.5, 18.5, 19, 19.5, 20.5, 21, 21.5, 22]) hat(beatTime(n), 0.06, Math.round(600 + n * 2));
-tick(beatTime(16.25) + 0.05, 86, 0.07);                            // "Outright from"
-tick(beatTime(16.5) + 0.12, 74, 0.13, -0.25);                      // card 1 lands
-tick(beatTime(16.5) + 0.27, 77, 0.13, 0.25);                       // card 2 lands
-tick(beatTime(17) + 0.06, 93, 0.04);                               // small print
-swish(beatTime(17.5) - 0.03, 0.3, 0.13, 83);                       // the control slides in
-tick(beatTime(17.5) + 0.2, 81, 0.09, -0.2);                        // indicator on "0-3"
-[[19, 81, -0.05], [19.5, 84, 0.15], [20, 88, 0.35]].forEach(([n, m, pan]) => tick(beatTime(n), m, 0.15, pan)); // steps
-ping(beatTime(20), 0.11);                                          // stops on "12 months"
-swish(beatTime(19) - 0.02, 0.36, 0.11, 87);                        // headline words
+// Keys duck under every kick, the house pump.
+for (let i = 0; i < N; i++) {
+  const t = i / SR;
+  const beat = t / BEAT;
+  const since = (beat - Math.floor(beat)) * BEAT;
+  const kicking = !inBreak(Math.floor(beat));
+  const g = kicking ? 1 - 0.38 * Math.exp(-since * 9) : 1;
+  keys.L[i] *= g;
+  keys.R[i] *= g;
+}
+
+// ---------------------------------------------------------------------------
+// Sound effects, at the film's own times (see src/scene*.js).
+
+// 1. A soft air whoosh under the map move in scene 1 (0 to 2.53 s), drifting
+//    left to right as the camera heads east.
+{
+  const t0 = 0.05, dur = 2.45;
+  const n = noise(dur, 11);
+  let low = 0, band = 0;
+  const out = new Float32Array(n.length);
+  for (let i = 0; i < n.length; i++) {
+    const k = i / n.length;
+    const f = 500 + 1700 * Math.sin(Math.PI * Math.min(1, k * 1.15));
+    const c = 2 * Math.sin((Math.PI * f) / SR);
+    low += c * band; band += c * (n[i] - low - 1.1 * band);
+    out[i] = band * Math.pow(Math.sin(Math.PI * k), 1.3);
+  }
+  const s0 = Math.round(t0 * SR);
+  for (let i = 0; i < out.length; i++) {
+    const pan = -0.6 + 1.2 * (i / out.length);
+    const a = ((pan + 1) * Math.PI) / 4;
+    sfx.L[s0 + i] += out[i] * Math.cos(a) * 0.5;
+    sfx.R[s0 + i] += out[i] * Math.sin(a) * 0.5;
+  }
+}
+
+// 2. A low thud when the pin lands (scene 2, beat 6.5).
+{
+  const n = Math.round(0.5 * SR), out = new Float32Array(n);
+  const thump = biquad(noise(0.04, 21), 'lp', 220);
+  let ph = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    ph += (2 * Math.PI * (48 + 75 * Math.exp(-t * 34))) / SR;
+    out[i] = Math.sin(ph) * Math.exp(-t * 8.5) * Math.min(1, t * 900) + (i < thump.length ? thump[i] * 0.6 : 0);
+  }
+  place(sfx, B(6.5), out, 0.95);
+}
+
+// 3. A light glass shimmer as the building is revealed inside the frame
+//    (scene 2, from beat 9 + 0.12 s): high bell partials on the chord,
+//    scattered over half a second.
+{
+  const r = mulberry32(31);
+  const t0 = B(9) + 0.12;
+  const notes = [86, 89, 93, 96, 98, 100, 101, 105];
+  for (let k = 0; k < 18; k++) {
+    const f = midi(notes[Math.floor(r() * notes.length)]);
+    const start = t0 + Math.pow(r(), 1.4) * 0.55;
+    const n = Math.round(0.9 * SR), out = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const t = i / SR;
+      out[i] = (Math.sin(2 * Math.PI * f * t) + 0.3 * Math.sin(2 * Math.PI * f * 2.76 * t) * Math.exp(-t * 9)) * Math.exp(-t * 5.5) * Math.min(1, t * 1500);
+    }
+    place(sfx, start, out, 0.045, r() * 1.4 - 0.7);
+  }
+}
+
+// 4. A soft click each time the segmented control's indicator moves
+//    (scene 4, beats 19, 19.5 and 20), following it left to right.
+[[19, -0.05], [19.5, 0.15], [20, 0.35]].forEach(([b, pan], k) => {
+  const n = Math.round(0.03 * SR), out = new Float32Array(n);
+  const tick = biquad(noise(0.005, 41 + k), 'bp', 3400, 1.5);
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    out[i] = (i < tick.length ? tick[i] * 0.8 : 0) + 0.35 * Math.sin(2 * Math.PI * 2300 * t) * Math.exp(-t * 260);
+  }
+  place(sfx, B(b), out, 0.5, pan);
+});
+
+// 5. A low hit when the logo appears (scene 5, beat 24).
+{
+  const n = Math.round(1.6 * SR), out = new Float32Array(n);
+  const thump = biquad(noise(0.06, 51), 'lp', 180);
+  let ph = 0, ph2 = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    ph += (2 * Math.PI * (40 + 55 * Math.exp(-t * 18))) / SR;
+    ph2 += (2 * Math.PI * (78 - 18 * Math.min(1, t / 0.3))) / SR;
+    out[i] = (Math.sin(ph) * Math.exp(-t * 2.6) + 0.45 * Math.sin(ph2) * Math.exp(-t * 9)) * Math.min(1, t * 900) + (i < thump.length ? thump[i] * 0.7 : 0);
+  }
+  place(sfx, B(24), out, 0.9);
+}
+
+// ---------------------------------------------------------------------------
+// Mix, then fade the whole thing out over the last 0.5 s.
+const L = new Float32Array(N), R = new Float32Array(N);
+const GAIN = { drums: 0.85, bass: 0.95, keys: 0.5, sfx: 1 };
+for (let i = 0; i < N; i++) {
+  L[i] = drums.L[i] * GAIN.drums + bass.L[i] * GAIN.bass + keys.L[i] * GAIN.keys + sfx.L[i] * GAIN.sfx;
+  R[i] = drums.R[i] * GAIN.drums + bass.R[i] * GAIN.bass + keys.R[i] * GAIN.keys + sfx.R[i] * GAIN.sfx;
+}
+if (LENGTH >= DURATION) {
+  const f0 = Math.round((DURATION - 0.5) * SR);
+  for (let i = f0; i < N; i++) {
+    const g = Math.cos((Math.PI / 2) * Math.min(1, (i - f0) / (N - f0)));
+    L[i] *= g;
+    R[i] *= g;
+  }
+}
 
 // ---------------------------------------------------------------------------
 function writeWav(file, l, r) {

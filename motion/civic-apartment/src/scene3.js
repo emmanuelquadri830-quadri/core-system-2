@@ -16,7 +16,7 @@ const CUT_OUT = beatFrameTime(15.5);      // 7.867 s, 0.5 s later
 
 const TITLE = [[{ text: 'Civic' }, { text: 'Apartment' }]];
 const SUB = [[{ text: '1' }, { text: 'and' }, { text: '2' }, { text: 'bedroom' }, { text: 'apartments' }]];
-const TITLE_SIZE = 132, SUB_SIZE = 50;
+const TITLE_SIZE = 116, SUB_SIZE = 50; // the title fits inside the safe area's 830 px
 const TITLE_IN = beatTime(10.5), SUB_IN = beatTime(11);
 const TEXT_OUT = END - 0.34; // gone by the last frame
 

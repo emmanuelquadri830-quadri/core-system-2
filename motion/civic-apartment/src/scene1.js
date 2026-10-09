@@ -219,7 +219,8 @@ function drawStandInMarker(ctx) {
   ctx.letterSpacing = '0px';
   ctx.textAlign = 'right';
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText('STAND-IN PLATE: replace with Google Earth export', W - 40, 200);
+  // bottom line of the safe area, opposite the credit, so no text sits outside it
+  ctx.fillText('STAND-IN PLATE: replace with Google Earth export', SAFE.right, SAFE.bottom - 6);
   ctx.textAlign = 'left';
 }
 

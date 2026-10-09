@@ -27,14 +27,12 @@ const B = beatTime;
 // ---------------------------------------------------------------------------
 // Words on screen, exactly as supplied.
 const ADDRESS = 'Abraham Adesanya, Lekki Gardens Phase 5';
-// Up to three callouts. The names are placeholders until the landmarks are
-// confirmed; `at` is the spot in metres from the site, x east, y south.
-// icon: 'place' | 'school' | 'shop' | 'hospital'.
-const LANDMARKS = [
-  { name: '[LANDMARK 1]', at: [-254, -244], side: 'right', icon: 'place' },
-  { name: '[LANDMARK 2]', at: [198, -203], side: 'left', icon: 'place' },
-  { name: '[LANDMARK 3]', at: [199, 325], side: 'left', icon: 'place' },
-];
+// Up to three callouts: { name, at: [metres east, metres south of the site],
+// side: 'left' | 'right', icon: 'place' | 'school' | 'shop' | 'hospital' }.
+// Empty until the landmarks are named and placed on real coordinates: a label
+// on a guessed spot would break the rule that every label sits on its real
+// location. They come in on beats 7.25, 7.5 and 7.75.
+const LANDMARKS = [];
 
 // Timing, in beats.
 const T_EXPRESS = B(5), EXPRESS_DUR = 0.42;
@@ -677,7 +675,8 @@ function drawStandInMarker(ctx) {
   ctx.letterSpacing = '0px';
   ctx.textAlign = 'right';
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText('STAND-IN PLATE: replace with Google Earth export', W - 40, 200);
+  // bottom line of the safe area, opposite the credit, so no text sits outside it
+  ctx.fillText('STAND-IN PLATE: replace with Google Earth export', SAFE.right, SAFE.bottom - 6);
   ctx.textAlign = 'left';
 }
 
@@ -724,7 +723,7 @@ export const scene2 = {
       [T_EXPRESS, T_EXPRESS + EXPRESS_DUR],
       [T_PIN - FALL, T_PIN + 0.08],
       [T_ADDRESS, T_ADDRESS + 0.3],
-      [T_MORPH, END, 16], // the frame grows fast; 6 samples would step
+      // no blur on the frame opening: blurred, it reads as a zoom-blur transition
     ];
   },
 
