@@ -223,6 +223,20 @@ tick(beatTime(8) + 0.32, 81, 0.12);
 riser(beatTime(9) - 0.1, beatTime(10), 0.55, 57);                  // the frame opens
 swish(beatTime(9) + 0.1, 0.42, 0.3, 59);
 
+// SCENE 3 cue (beat 10 to 8.0 s): the frame lands on the street; the type
+// and the detail cut get their own sounds.
+kick(beatTime(10), 0.85);
+sub(beatTime(10), 0.4);
+for (const n of [11, 12, 13, 14, 15]) kick(beatTime(n), n === 12 ? 0.75 : 0.58);
+for (const n of [10.5, 11.5, 12.5, 13.5, 14.5, 15.5]) hat(beatTime(n), 0.085, Math.round(500 + n * 2));
+swish(beatTime(10.5) - 0.05, 0.42, 0.2, 61);                       // title words rise
+tick(beatTime(11) + 0.05, 81, 0.1);                                // sub-line
+// the detail cut: a dry click on the cut, a glassy ping under it
+zap(beatTime(14.5) - 0.01, 0.05, 0.35, 67, 0, 0, 3000, 6000);
+tick(beatTime(14.5), 93, 0.14, 0.2);
+ping(beatTime(14.5) + 0.02, 0.1);
+swish(beatTime(15.5) - 0.08, 0.3, 0.16, 71);                       // back to the wide
+
 // ---------------------------------------------------------------------------
 function writeWav(file, l, r) {
   const buf = Buffer.alloc(44 + l.length * 4);

@@ -18,6 +18,7 @@ import {
 import { setFont } from './type.js';
 import { FRAME_RADII } from './frame.js';
 import { strokeGlow, glowHead, polyPath } from './glow.js';
+import { drawStreet, streetPoint } from './scene3.js';
 
 export const START = beatFrameTime(5); // 2.533 s, scene 1's cut
 export const END = beatFrameTime(10);  // 5.100 s
@@ -88,7 +89,6 @@ export function toScreen(cam, [x, y]) {
 const TEX = 1.5; // texture pixels per metre
 const BOUNDS = { x0: -950, x1: 900, y0: -1700, y1: 1250 };
 let texCanvas = null;
-let aerial = null; // assets/renders/aerial.webp, what the frame opens onto
 
 function distToPath(path, x, y) {
   let best = Infinity;
@@ -581,8 +581,7 @@ function drawAddress(ctx, t, cam) {
 }
 
 // At beat 9 the head stretches into the curved frame and the frame grows to
-// fill the screen, opening onto the top-down render of the building, which
-// is lined up with the spot the pin marked.
+// fill the screen, opening onto the street-level render scene 3 continues.
 const FRAME0 = [150, 190];  // the frame's size once it has its shape
 const FRAME1 = 2200;        // width when it has passed every edge
 function morphState(t, cam) {
@@ -628,21 +627,18 @@ function drawMorph(ctx, t, cam) {
   ctx.fill(shapePath);
   ctx.restore();
 
-  // Inside: the building from above, with the blue clearing off it.
+  // Inside: the street-level render that scene 3 continues, with the blue
+  // clearing off it. While the frame is small the whole building sits inside
+  // it, centred where the pin was; by the time the frame covers the screen
+  // the picture is exactly scene 3's first frame.
   const reveal = easeIn(span(t, T_MORPH + 0.12, 0.24));
-  if (reveal > 0 && aerial) {
+  if (reveal > 0) {
     ctx.save();
     ctx.clip(shapePath);
-    // The render grows with the window: while the frame is small the whole
-    // building sits inside it, centred where the pin was; by the time the
-    // frame covers the screen the render covers it too.
-    const cover = Math.max(W / aerial.width, H / aerial.height);
-    const z = Math.min(s.w / 700, cover * lerp(1.06, 1.02, span(t, T_FULL, END - T_FULL)));
-    const bx = 500, by = 460; // building centre in the render, in image pixels
-    const pull = 1 - smoothstep(clamp01((s.w - 300) / 900));
-    const ox = lerp(0, s.cx - (W / 2 + (bx - aerial.width / 2) * z), pull);
-    const oy = lerp(0, s.cy - (H / 2 + (by - aerial.height / 2) * z), pull);
-    ctx.drawImage(aerial, W / 2 - (aerial.width / 2) * z + ox, H / 2 - (aerial.height / 2) * z + oy, aerial.width * z, aerial.height * z);
+    const k = Math.min(1, s.w / 1000);
+    const pull = 1 - smoothstep(clamp01((s.w - 300) / 700));
+    const [bx, by] = streetPoint([560, 600], k); // middle of the building
+    drawStreet(ctx, t, { k, ox: (s.cx - bx) * pull, oy: (s.cy - by) * pull });
     ctx.globalAlpha = 1 - reveal;
     ctx.fillStyle = COLOR.blue;
     ctx.fillRect(0, 0, W, H);
@@ -692,10 +688,6 @@ export const scene2 = {
   end: END,
 
   async load() {
-    const img = new Image();
-    img.src = 'assets/renders/aerial.webp';
-    await img.decode();
-    aerial = img;
     standInTexture();
   },
 

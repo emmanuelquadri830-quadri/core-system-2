@@ -11,8 +11,9 @@ Land Republic. 1080 × 1920, 30 fps, 15.0 s, for Reels and TikTok.
   H.264 High, yuv420p, CRF 16, BT.709 tags, `+faststart`.
 
 ```sh
-node audio/score.mjs --to 5.1                # score, SFX, beats.json, -14 LUFS mix
-node render.mjs --from 0 --to 5.1 --audio audio/mix.wav --out out/scene1-2.mp4
+node audio/score.mjs --to 8                  # score, SFX, beats.json, -14 LUFS mix
+node render.mjs --from 0 --to 8 --audio audio/mix.wav --out out/scene1-3.mp4
+python3 -I tools/layers.py assets/renders/street-view.webp assets/renders/layers   # parallax layers
 node render.mjs --still 1.3                  # one frame as PNG
 ```
 
@@ -25,7 +26,9 @@ node render.mjs --still 1.3                  # one frame as PNG
 | `src/frame.js` | The curved frame shape taken from the facade |
 | `src/glow.js` | The glowing road line and its travelling head, shared by every scene |
 | `src/scene1.js` | Scene 1: dive toward Ajah, expressway line, headline |
-| `src/scene2.js` | Scene 2 (beat 5 to beat 10, 2.53 to 5.1 s): roads, plot, pin, radius circles, landmark callouts, address pill, pin head opening into the curved frame |
+| `src/scene2.js` | Scene 2 (beat 5 to beat 10, 2.53 to 5.1 s): roads, plot, pin, radius circles, landmark callouts, address pill, pin head opening into the curved frame onto the street view |
+| `src/scene3.js` | Scene 3 (5.1 to 8.0 s): street-level render in three parallax layers, lower-third title, detail cut to the curved glass balcony on beat 14.5 |
+| `tools/layers.py` | Splits the street-level render into sky, building and front foliage; the building's pixels are never changed |
 | `src/film.js` | Compositor: plate grade, motion blur on fast moves (a scene can ask for more samples per window), 3% grain |
 | `audio/score.mjs` | Synthesized score and SFX; writes `beats.json` |
 | `beats.json` | Beat grid: 60/118 s per beat, each beat snapped to its nearest frame |

@@ -3,8 +3,9 @@
 import { W, H, FPS, DURATION, mulberry32 } from './lib.js';
 import { scene1 } from './scene1.js';
 import { scene2 } from './scene2.js';
+import { scene3 } from './scene3.js';
 
-const SCENES = [scene1, scene2];
+const SCENES = [scene1, scene2, scene3];
 
 const MOTION_BLUR_SAMPLES = 6;
 const SHUTTER = 0.5 / FPS; // 180 degree shutter
