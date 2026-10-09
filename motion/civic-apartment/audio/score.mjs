@@ -237,6 +237,25 @@ tick(beatTime(14.5), 93, 0.14, 0.2);
 ping(beatTime(14.5) + 0.02, 0.1);
 swish(beatTime(15.5) - 0.08, 0.3, 0.16, 71);                       // back to the wide
 
+// SCENE 4 cue (8.0 s to beat 22.5): the groove halves under the prices so
+// the interface sounds are heard; each card, the control and every step of
+// the indicator gets its own click, rising to the stop on "12 months".
+const S4 = Math.round(beatTime(15.75) * FPS) / FPS;                // 8.0 s
+swish(S4 - 0.02, 0.42, 0.3, 81);                                   // the wipe, left to right
+kick(beatTime(16), 0.7);
+sub(beatTime(16), 0.22);
+for (const n of [18, 20, 22]) kick(beatTime(n), n === 20 ? 0.62 : 0.5);
+for (const n of [16.5, 17, 17.5, 18.5, 19, 19.5, 20.5, 21, 21.5, 22]) hat(beatTime(n), 0.06, Math.round(600 + n * 2));
+tick(beatTime(16.25) + 0.05, 86, 0.07);                            // "Outright from"
+tick(beatTime(16.5) + 0.12, 74, 0.13, -0.25);                      // card 1 lands
+tick(beatTime(16.5) + 0.27, 77, 0.13, 0.25);                       // card 2 lands
+tick(beatTime(17) + 0.06, 93, 0.04);                               // small print
+swish(beatTime(17.5) - 0.03, 0.3, 0.13, 83);                       // the control slides in
+tick(beatTime(17.5) + 0.2, 81, 0.09, -0.2);                        // indicator on "0-3"
+[[19, 81, -0.05], [19.5, 84, 0.15], [20, 88, 0.35]].forEach(([n, m, pan]) => tick(beatTime(n), m, 0.15, pan)); // steps
+ping(beatTime(20), 0.11);                                          // stops on "12 months"
+swish(beatTime(19) - 0.02, 0.36, 0.11, 87);                        // headline words
+
 // ---------------------------------------------------------------------------
 function writeWav(file, l, r) {
   const buf = Buffer.alloc(44 + l.length * 4);

@@ -6,7 +6,7 @@
 //     render's own, only ever scaled.
 //   - lower third: "Civic Apartment", then "1 and 2 bedroom apartments"
 //   - beat 14.5 (7.37 s): a 0.5 s detail cut to the curved glass balcony
-import { W, H, SAFE, FPS, beatTime, beatFrameTime, clamp01 } from './lib.js';
+import { W, H, SAFE, FPS, beatTime, beatFrameTime, clamp01, span, easeIn, easeOut } from './lib.js';
 import { layoutHeadline, drawHeadline, headlineBlurWindows } from './type.js';
 
 export const START = beatFrameTime(10);   // 5.1 s, scene 2's cut
@@ -42,7 +42,8 @@ const images = {};
 // Draws the layered render at time t. k shrinks the whole picture and
 // (ox, oy) shifts it; scene 2 uses them while its frame is still small.
 export function drawStreet(ctx, t, { k = 1, ox = 0, oy = 0 } = {}) {
-  const u = clamp01((t - PUSH_FROM) / (END - PUSH_FROM));
+  // not clamped at the end: scene 4's wipe crosses a picture that is still moving
+  const u = Math.max(0, (t - PUSH_FROM) / (END - PUSH_FROM));
   for (const layer of LAYERS) {
     const img = images[layer.file];
     if (!img) continue;
@@ -115,8 +116,12 @@ export const scene3 = {
     g.addColorStop(0.35, 'rgba(15,15,15,0.5)');
     g.addColorStop(0.7, 'rgba(15,15,15,0.72)');
     g.addColorStop(1, 'rgba(15,15,15,0.8)');
+    // it comes in with the type and leaves with it, so neither cut jumps
+    ctx.save();
+    ctx.globalAlpha = easeIn(span(t, START, 0.45)) * (1 - easeOut(span(t, TEXT_OUT, 0.3)));
     ctx.fillStyle = g;
     ctx.fillRect(0, 960, W, H - 960);
+    ctx.restore();
     const [title, sub] = layouts(ctx);
     drawHeadline(ctx, title, t, { inAt: TITLE_IN, outAt: TEXT_OUT });
     drawHeadline(ctx, sub, t, { inAt: SUB_IN, outAt: TEXT_OUT + 0.04, color: 'rgba(255,255,255,0.88)' });
