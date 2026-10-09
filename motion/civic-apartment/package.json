@@ -1,0 +1,9 @@
+{
+  "name": "civic-apartment-film",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs",
+    "score": "node audio/score.mjs"
+  }
+}
