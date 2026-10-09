@@ -73,6 +73,14 @@ if (args.still !== undefined) {
     '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
     '-r', String(FPS), '-frames:v', String(f1 - f0),
   );
+  // The still hold must decode to identical frames. x264 would otherwise keep
+  // refining it frame by frame, so the hold starts on a keyframe at high
+  // quality and the frames after it are coded so coarsely that every block is
+  // simply copied from it.
+  const h = film.holdFrom === null ? -1 : film.holdFrom - f0;
+  if (h > 0 && h < f1 - f0 - 1) {
+    ff.push('-force_key_frames', `expr:eq(n,${h})`, '-x264-params', `zones=${h},${h},q=6/${h + 1},${f1 - f0 - 1},q=40`);
+  }
   if (args.audio) ff.push('-c:a', 'aac', '-b:a', '256k', '-ar', '48000');
   ff.push('-movflags', '+faststart', outPath);
 

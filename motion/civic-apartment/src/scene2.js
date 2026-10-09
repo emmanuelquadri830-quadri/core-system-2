@@ -79,7 +79,7 @@ const drawEase = cubicBezier(0.3, 0.6, 0.2, 1);
 
 // The hero render keeps a slow push-in from the moment it appears, so the shot
 // never stops. Scene 3 continues from the same function.
-export const heroPush = (t) => 1 + 0.03 * Math.max(0, t - T_MORPH);
+export const heroPush = (t) => 1 + 0.02 * Math.max(0, t - T_MORPH);
 
 // ---------------------------------------------------------------------------
 function drawRoads(ctx, t, cam) {
@@ -175,7 +175,8 @@ function pinGeometry(t, cam) {
   const tipY = tip[1] - (1 - drop) * 220;
   const head = [tip[0], tipY - (PIN * Math.SQRT2) / 2];
   const ma = easeIn(span(t, T_MORPH, 0.3));
-  const mb = easeOut(span(t, T_MORPH_B, T_FILLED - T_MORPH_B));
+  // Eases into the full cover rather than accelerating into it: no zoom blur.
+  const mb = smoothstep(span(t, T_MORPH_B, T_FILLED - T_MORPH_B));
   const aCentre = [head[0], head[1] - 270]; // the card rises clear of the address label
   const bigW = W * 2.4, bigH = H * 2.4;
   const w = lerp(lerp(PIN, STRETCH.w, ma), bigW, mb);
@@ -234,10 +235,12 @@ function drawPin(ctx, t, cam, env) {
     ctx.rotate(-g.rot);
     // The photo covers the visible part of the frame and settles as a
     // full-screen cover (10% overscan) centred on screen, where scene 3 starts.
-    const bw = Math.min(g.w, W * 1.1), bh = Math.min(g.h, H * 1.1);
-    const s = Math.max(bw / img.width, bh / img.height) * heroPush(t);
     const settle = clamp01(g.mb * 3);
     const ox = (W / 2 - g.cx) * settle, oy = (H / 2 - g.cy) * settle;
+    // Grow the cover box by the offset so the photo always covers the frame;
+    // the offset is zero at the end, leaving exactly scene 3's first framing.
+    const bw = Math.min(g.w, W * 1.1) + 2 * Math.abs(ox), bh = Math.min(g.h, H * 1.1) + 2 * Math.abs(oy);
+    const s = Math.max(bw / img.width, bh / img.height) * heroPush(t);
     ctx.globalAlpha = reveal;
     ctx.drawImage(img, ox - img.width * s / 2, oy - img.height * s / 2, img.width * s, img.height * s);
     ctx.restore();
@@ -259,7 +262,8 @@ function drawPin(ctx, t, cam, env) {
 // ---------------------------------------------------------------------------
 // Labels.
 const LABEL_SIZE = 28;
-const ADDRESS = [[{ text: 'Abraham' }, { text: 'Adesanya,' }], [{ text: 'Lekki' }, { text: 'Gardens' }, { text: 'Phase' }, { text: '5' }]];
+// The facts place the site by Lekki Gardens Phase 5, not inside it.
+const ADDRESS = [[{ text: 'Abraham' }, { text: 'Adesanya,' }], [{ text: 'by' }, { text: 'Lekki' }, { text: 'Gardens' }, { text: 'Phase' }, { text: '5' }]];
 const ADDRESS_SIZE = 32;
 
 const layouts = new Map();
@@ -393,8 +397,7 @@ export const scene2 = {
     return [
       [T_ADDRESS, T_ADDRESS + 0.15],
       [T_LANDMARKS_OUT, T_LANDMARKS_OUT + 0.2],
-      [T_ADDRESS_OUT, T_ADDRESS_OUT + 0.2],
-      [T_MORPH_B, END, 24],
+      // No blur once the frame starts to fill the screen: that would be a zoom blur.
     ];
   },
 };

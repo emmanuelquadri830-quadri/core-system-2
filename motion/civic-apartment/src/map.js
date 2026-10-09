@@ -244,10 +244,11 @@ export function drawCredit(ctx) {
 }
 
 export function drawStandInMarker(ctx) {
-  setFont(ctx, 20, 400, 0);
+  // Inside the safe area, opposite the credit. Remove once real footage is in.
+  setFont(ctx, 22, 400, 0);
   ctx.textAlign = 'right';
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText('STAND-IN PLATE: replace with Google Earth export', W - 40, 200);
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fillText('Stand-in map, not Google Earth', SAFE.right, SAFE.bottom - 6);
   ctx.textAlign = 'left';
 }
 

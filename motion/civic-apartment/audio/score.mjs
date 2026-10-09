@@ -1,4 +1,5 @@
-// Synthesized score and sound effects at 118 BPM, written to audio/mix-raw.wav,
+// Synthesized Afro-house score with a log drum, and the brief's five sound
+// effects, at 118 BPM. Written to audio/mix-raw.wav,
 // then normalised to -14 LUFS integrated with peaks under -1 dBTP (audio/mix.wav).
 // Also writes beats.json, the beat grid every cut and hit is placed on.
 // Seeded noise only; the output is identical on every run.
@@ -8,6 +9,9 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { BPM, BEAT, FPS, DURATION, beatTime, mulberry32 } from '../src/lib.js';
+import { END as END1 } from '../src/scene1.js';
+import { T_STEPS } from '../src/scene4.js';
+import { T_LOGO } from '../src/scene5.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SR = 48000;
@@ -57,6 +61,7 @@ function hat(t0, gain, seed) {
 // over `attack` seconds (0 means already sounding) and out over 0.3 s.
 const DM9 = [38, 45, 53, 57, 60, 64];     // D2 A2 F3 A3 C4 E4
 const BBMAJ9 = [34, 41, 50, 57, 60, 65];  // Bb1 F2 D3 A3 C4 F4
+const GM9 = [31, 38, 46, 57, 62, 65];     // G1 D2 Bb2 A3 D4 F4 (keeps A3 and F4 from B flat)
 function pad(t0, t1, gain, notes = DM9, attack = 0) {
   const s0 = Math.round(t0 * SR), s1 = Math.min(N, Math.round(t1 * SR));
   const phases = notes.flatMap(() => [0, 0]);
@@ -80,67 +85,6 @@ function pad(t0, t1, gain, notes = DM9, attack = 0) {
   }
 }
 
-// Riser: band of noise sweeping upward into the hit.
-function riser(t0, t1, gain, seed) {
-  const rnd = mulberry32(seed);
-  const s0 = Math.round(t0 * SR), s1 = Math.round(t1 * SR);
-  let a = 0, b = 0;
-  for (let i = s0; i < s1; i++) {
-    const k = (i - s0) / (s1 - s0);
-    const n = rnd() * 2 - 1;
-    const c = 0.01 + 0.25 * k * k;
-    a += c * (n - a); b += c * (a - b);
-    const band = a - b;
-    const env = Math.pow(k, 2.2) * gain;
-    add(i, band * env * (1 - 0.3 * k), band * env * (0.7 + 0.3 * k));
-  }
-}
-
-// Short air swish for text entrances.
-function swish(t0, dur, gain, seed) {
-  const rnd = mulberry32(seed);
-  const s0 = Math.round(t0 * SR), n = Math.round(dur * SR);
-  let a = 0;
-  for (let i = 0; i < n; i++) {
-    const k = i / n;
-    a += 0.18 * (rnd() * 2 - 1 - a);
-    const env = Math.sin(Math.PI * Math.pow(k, 0.6)) * gain;
-    add(s0 + i, a * env * (1.2 - k), a * env * (0.2 + k));
-  }
-}
-
-// Bright ping with a short echo tail, for the line landing.
-function ping(t0, gain, note = 74) {
-  const s0 = Math.round(t0 * SR);
-  const partials = [[midi(note), 1], [midi(note + 7), 0.5], [midi(note + 12), 0.25], [midi(note) * 2.76, 0.12]];
-  const len = SR * 1.6;
-  const dry = new Float32Array(len);
-  for (let i = 0; i < len; i++) {
-    const t = i / SR;
-    let v = 0;
-    for (const [f, a] of partials) v += a * Math.sin(2 * Math.PI * f * t) * Math.exp(-t * (3 + f / 600));
-    dry[i] = v * Math.min(1, t * 2000);
-  }
-  for (let i = 0; i < len; i++) {
-    const e1 = i >= SR * 0.127 ? dry[i - Math.round(SR * 0.127)] * 0.35 : 0;
-    const e2 = i >= SR * 0.254 ? dry[i - Math.round(SR * 0.254)] * 0.18 : 0;
-    add(s0 + i, (dry[i] + e1) * gain, (dry[i] + e2) * gain);
-  }
-}
-
-// Plucked bass: a saw with a closing low-pass.
-function bass(t0, note, gain) {
-  const s0 = Math.round(t0 * SR);
-  let ph = 0, lp = 0;
-  for (let i = 0; i < SR * 0.22; i++) {
-    const t = i / SR;
-    ph += midi(note) / SR;
-    const saw = 2 * (ph % 1) - 1;
-    lp += (0.02 + 0.2 * Math.exp(-t * 30)) * (saw - lp);
-    add(s0 + i, lp * Math.exp(-t * 9) * Math.min(1, t * 800) * gain);
-  }
-}
-
 // Clap: three quick noise bursts and a short tail.
 function clap(t0, gain, seed) {
   const rnd = mulberry32(seed);
@@ -157,18 +101,6 @@ function clap(t0, gain, seed) {
   }
 }
 
-// Short rising glide, for lines drawing on.
-function glide(t0, dur, f0, f1, gain) {
-  const s0 = Math.round(t0 * SR), n = Math.round(dur * SR);
-  let ph = 0;
-  for (let i = 0; i < n; i++) {
-    const k = i / n;
-    ph += (f0 * Math.pow(f1 / f0, k)) / SR;
-    const env = Math.sin(Math.PI * k) * gain;
-    add(s0 + i, Math.sin(2 * Math.PI * ph) * env * (1 - 0.4 * k), Math.sin(2 * Math.PI * ph) * env * (0.6 + 0.4 * k));
-  }
-}
-
 function sub(t0, gain) {
   const s0 = Math.round(t0 * SR);
   let ph = 0;
@@ -179,43 +111,231 @@ function sub(t0, gain) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// SCENE 1 cue (0 to beat 5). The camera is already moving on frame 0, so the
-// pad starts already sounding and the first kick lands on beat 0.
-pad(0, beatTime(8) + 0.3, 0.5, DM9);
-riser(0.15, beatTime(4), 0.5, 7);
-swish(0.08, 0.5, 0.22, 11);
-for (const n of [0, 1, 2, 3]) kick(beatTime(n), n === 0 ? 0.75 : 0.6);
-for (const n of [1.5, 2.5, 3.5]) hat(beatTime(n), 0.09, Math.round(100 + n * 2)); // offbeat hats
-kick(beatTime(4), 0.95);
-sub(beatTime(4), 0.55);
-ping(beatTime(4), 0.22);
-swish(beatTime(5) - 0.3, 0.32, 0.25, 13); // exit swish into the cut
+// Crash: airy high-passed noise with a soft attack and a natural two-stage
+// decay. The low-pass closes as it rings out, so it darkens like a cymbal, and
+// each side has its own seeded noise so it sounds wide.
+function crash(t0, dur, gain, seed) {
+  const rndL = mulberry32(seed), rndR = mulberry32(seed + 1);
+  const s0 = Math.round(t0 * SR), n = Math.round(dur * SR);
+  let hL = 0, hR = 0, lpL = 0, lpR = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    const nL = rndL() * 2 - 1, nR = rndR() * 2 - 1;
+    hL += 0.2 * (nL - hL); hR += 0.2 * (nR - hR); // the lows, subtracted below to leave the air
+    const cut = 0.3 + 0.55 * Math.exp(-t * 2.5);
+    lpL += cut * (nL - hL - lpL); lpR += cut * (nR - hR - lpR);
+    const env = Math.min(1, t / 0.012) * (0.55 * Math.exp(-t * 7) + 0.45 * Math.exp(-t * 1.6)) *
+      Math.min(1, (n - i) / (SR * 0.2));
+    add(s0 + i, lpL * env * gain, lpR * env * gain);
+  }
+}
 
-// SCENE 2 cue (beat 5 to beat 10). Bar 2 adds bass and claps; the chord moves
-// to B flat on beat 8, when the address arrives.
+// Glass glint: each high partial is a pair of sines a few hertz apart, so the
+// pair beats (the shimmer), over two tiny clicks of high-passed noise 30 ms
+// apart, like a camera shutter. The sides beat at different rates for width.
+function glint(t0, gain, seed, notes = [98, 101, 105]) {
+  const rnd = mulberry32(seed);
+  const s0 = Math.round(t0 * SR), n = Math.round(SR * 0.6);
+  let prev = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    let l = 0, r = 0;
+    notes.forEach((m, k) => {
+      const f = midi(m), d = 4 + 2 * k;
+      const a = Math.exp(-t * (6 + 3 * k)) / (2 * notes.length);
+      l += a * (Math.sin(2 * Math.PI * (f - d) * t) + Math.sin(2 * Math.PI * (f + d) * t));
+      r += a * (Math.sin(2 * Math.PI * (f - 1.3 * d) * t) + Math.sin(2 * Math.PI * (f + 1.3 * d) * t));
+    });
+    const nz = rnd() * 2 - 1;
+    const hp = nz - prev; prev = nz;
+    const tick = (Math.exp(-t * 900) + (t >= 0.03 ? 0.6 * Math.exp(-(t - 0.03) * 900) : 0)) * hp * 0.35;
+    const env = Math.min(1, t / 0.002) * Math.min(1, (n - i) / (SR * 0.05)) * gain;
+    add(s0 + i, (l + tick) * env, (r + tick) * env);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Afro-house kit.
+
+// Log drum: a pitched, saturated body with a fast downward bend and a wooden
+// knock on the attack. It carries the bassline.
+function logDrum(t0, note, gain, dur = 0.42) {
+  const s0 = Math.round(t0 * SR), n = Math.round(dur * SR);
+  const f = midi(note);
+  let ph = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    ph += (f * (1 + 0.9 * Math.exp(-t * 55))) / SR;
+    const body = Math.sin(2 * Math.PI * ph) + 0.35 * Math.sin(4 * Math.PI * ph) + 0.12 * Math.sin(6 * Math.PI * ph);
+    const env = Math.min(1, t * 1500) * Math.exp(-t * 6.5) * Math.min(1, (n - i) / (SR * 0.03));
+    const knock = Math.sin(2 * Math.PI * 1150 * t) * Math.exp(-t * 160) * Math.min(1, t * 3000) * 0.3;
+    add(s0 + i, (Math.tanh(body * env * 2.2) * 0.75 + knock) * gain);
+  }
+}
+
+// Shaker: a short burst of bright seeded noise.
+function shaker(t0, gain, seed) {
+  const rnd = mulberry32(seed);
+  const s0 = Math.round(t0 * SR), n = Math.round(SR * 0.07);
+  let p1 = 0, p2 = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    const x = rnd() * 2 - 1;
+    const hp = x - p1; p1 = x;
+    p2 += 0.5 * (hp - p2);
+    const env = Math.min(1, t / 0.008) * Math.exp(-t * 55);
+    add(s0 + i, p2 * env * gain * 0.8, p2 * env * gain);
+  }
+}
+
+// Conga: a short pitched skin with a small upward bend at the strike.
+function conga(t0, freq, gain, pan = 0) {
+  const s0 = Math.round(t0 * SR), n = Math.round(SR * 0.25);
+  let ph = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    ph += (freq * (1 + 0.25 * Math.exp(-t * 40))) / SR;
+    const v = Math.sin(2 * Math.PI * ph) * Math.exp(-t * 16) * Math.min(1, t * 2000) * gain;
+    add(s0 + i, v * (1 - pan), v * (1 + pan));
+  }
+}
+
+// Keys: a soft electric-piano stab, each voice a lightly modulated sine.
+function keys(t0, notes, gain, dur = 0.5) {
+  const s0 = Math.round(t0 * SR), n = Math.round(dur * SR);
+  for (let i = 0; i < n; i++) {
+    const t = i / SR;
+    let l = 0, r = 0;
+    notes.forEach((m, k) => {
+      const f = midi(m);
+      const v = Math.sin(2 * Math.PI * f * t + 0.8 * Math.sin(2 * Math.PI * f * t) * Math.exp(-t * 9)) * Math.exp(-t * 5);
+      if (k % 2) r += v; else l += v;
+    });
+    const env = (Math.min(1, t * 400) * Math.min(1, (n - i) / (SR * 0.05)) * gain) / notes.length;
+    add(s0 + i, (l + 0.5 * r) * env, (r + 0.5 * l) * env);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sound effects: only the five in the brief.
+
+// Soft air whoosh: band-limited noise whose band rises and swings across the
+// stereo field, swelling and easing away.
+function airWhoosh(t0, t1, gain, seed) {
+  const rndL = mulberry32(seed), rndR = mulberry32(seed + 1);
+  const s0 = Math.round(t0 * SR), n = Math.round((t1 - t0) * SR);
+  let aL = 0, bL = 0, aR = 0, bR = 0;
+  for (let i = 0; i < n; i++) {
+    const k = i / n;
+    const c = 0.015 + 0.09 * k;
+    aL += c * (rndL() * 2 - 1 - aL); bL += c * 0.5 * (aL - bL);
+    aR += c * (rndR() * 2 - 1 - aR); bR += c * 0.5 * (aR - bR);
+    const env = Math.pow(Math.sin(Math.PI * Math.pow(k, 0.8)), 1.5) * gain;
+    const pan = 0.5 + 0.4 * Math.sin(Math.PI * k);
+    add(s0 + i, (aL - bL) * env * (1.2 - pan), (aR - bR) * env * (0.4 + pan));
+  }
+}
+
+// Low thud: a soft, short low drum with no click.
+function thud(t0, gain) {
+  const s0 = Math.round(t0 * SR);
+  let ph = 0;
+  for (let i = 0; i < SR * 0.4; i++) {
+    const t = i / SR;
+    ph += (48 + 50 * Math.exp(-t * 30)) / SR;
+    add(s0 + i, Math.sin(2 * Math.PI * ph) * Math.exp(-t * 11) * Math.min(1, t * 300) * gain);
+  }
+}
+
+// Soft click: a tiny damped tick, for the segmented control.
+function click(t0, gain, seed) {
+  const rnd = mulberry32(seed);
+  const s0 = Math.round(t0 * SR);
+  let prev = 0;
+  for (let i = 0; i < SR * 0.03; i++) {
+    const t = i / SR;
+    const x = rnd() * 2 - 1, hp = x - prev; prev = x;
+    add(s0 + i, (Math.sin(2 * Math.PI * 2400 * t) * 0.6 + hp * 0.4) * Math.exp(-t * 320) * gain);
+  }
+}
+
+// Low hit: sub drop with a low tom on top.
+function lowHit(t0, gain) {
+  sub(t0, gain);
+  const s0 = Math.round(t0 * SR);
+  let ph = 0;
+  for (let i = 0; i < SR * 0.6; i++) {
+    const t = i / SR;
+    ph += (85 + 70 * Math.exp(-t * 25)) / SR;
+    add(s0 + i, Math.sin(2 * Math.PI * ph) * Math.exp(-t * 6) * Math.min(1, t * 800) * gain * 0.6);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Arrangement: Afro-house at 118 BPM over the whole 15 s. Bar n starts on
+// beat 4(n - 1); 16th steps are a quarter beat. Bar 1 is the intro under the
+// scene 1 dive; the full groove lands on beat 4 with the expressway line.
 const b = beatTime;
-pad(b(8) - 0.05, LENGTH, 0.5, BBMAJ9, 0.2);
-for (const n of [5, 6, 7, 8, 9]) kick(b(n), 0.62);
-for (const n of [5, 7, 9]) clap(b(n), 0.32, 200 + n);
-for (const n of [4.5, 5.5, 6.5, 7.5, 8.5, 9.5]) hat(b(n), 0.1, Math.round(300 + n * 2));
-for (const n of [4.5, 5.5, 6.5, 7.5]) bass(b(n), 38, 0.42);       // D
-for (const n of [8.5, 9.5]) bass(b(n), 34, 0.42);                 // B flat
-glide(b(5), 0.4, 700, 1500, 0.05);                                // roads draw on
-swish(b(5), 0.45, 0.16, 21);
-ping(b(5.5), 0.07, 81);                                           // plot traced
-kick(b(6) + 0.04, 0.35);                                          // pin lands
-ping(b(6) + 0.04, 0.12, 86);
-ping(b(6) + 0.16, 0.04, 81);                                      // ripples
-ping(b(6) + 0.3, 0.03, 86);
-riser(b(6.5), b(6.5) + 0.8, 0.12, 23);                            // circles open
-ping(b(6.5), 0.08, 77);                                           // landmarks
-ping(b(7), 0.08, 81);
-ping(b(7.5), 0.08, 84);
-swish(b(8), 0.35, 0.2, 25);                                       // address slides out
-ping(b(8) + 0.05, 0.09, 74);
-riser(b(9), b(10), 0.55, 27);                                     // frame stretches to fill
-swish(b(9) + 0.2, 0.3, 0.22, 29);
+const STEP = BEAT / 4;
+const LAST_BEAT = Math.floor(DURATION / BEAT); // beat 29
+const bars = [
+  { chord: DM9, root: 38 }, { chord: DM9, root: 38 }, { chord: BBMAJ9, root: 34 }, { chord: GM9, root: 31 },
+  { chord: DM9, root: 38 }, { chord: BBMAJ9, root: 34 }, { chord: GM9, root: 31 }, { chord: DM9, root: 38 },
+];
+bars.forEach((bar, i) => {
+  const t0 = b(4 * i), t1 = Math.min(LENGTH, b(4 * i + 4));
+  if (t0 >= LENGTH) return;
+  pad(i === 0 ? 0 : t0 - 0.05, t1 + 0.3, 0.36, bar.chord, i === 0 ? 0 : 0.2);
+});
+
+for (let n = 0; n <= LAST_BEAT; n++) {
+  const bar = Math.floor(n / 4), beatInBar = n % 4;
+  const thin = n >= 28; // the drums thin out over the held end frame
+  kick(b(n), n < 4 ? 0.5 : thin ? 0.45 : 0.68);
+  if (n >= 4 && !thin && beatInBar % 2 === 1) clap(b(n), 0.3, 600 + n);
+  if (n >= 4 && !thin) hat(b(n + 0.5), 0.08, 700 + n);
+  for (let s = 0; s < 4; s++) shaker(b(n) + s * STEP, s === 2 ? 0.06 : 0.035, 800 + n * 4 + s);
+  if (bar >= 1 && !thin) {
+    if (beatInBar === 0) conga(b(n) + 3 * STEP, 330, 0.16, 0.3);
+    if (beatInBar === 1) conga(b(n) + 2 * STEP, 220, 0.18, -0.3);
+    if (beatInBar === 2) { conga(b(n) + 2 * STEP, 330, 0.14, 0.3); conga(b(n) + 3 * STEP, 330, 0.12, 0.3); }
+    if (beatInBar === 3) conga(b(n) + 2 * STEP, 220, 0.16, -0.3);
+  }
+}
+
+// Log drum from bar 2, plus a pickup at the end of bar 1. Steps within the bar
+// and their intervals over the bar's root.
+const LOG = [[3, 0], [6, 0], [10, 7], [13, 12], [14, 0]];
+logDrum(b(3.75), 38, 0.42);
+bars.forEach((bar, i) => {
+  if (i === 0) return;
+  for (const [step, iv] of LOG) {
+    const t = b(4 * i) + step * STEP;
+    if (t < DURATION - 0.1) logDrum(t, bar.root + iv, 0.5);
+  }
+  // Offbeat keys from bar 3.
+  if (i >= 2) {
+    const top = bar.chord.filter((m) => m >= 50);
+    for (const n of [0.5, 2.5]) if (b(4 * i + n) < DURATION - 0.3) keys(b(4 * i + n), top, 0.14);
+  }
+});
+crash(b(4), 1.6, 0.06, 41);   // the groove arrives with the line
+crash(b(16), 1.4, 0.05, 43);  // into the prices
+
+// The five sound effects.
+airWhoosh(0, END1 + 0.05, 0.42, 51);           // the map move in scene 1
+thud(b(6) + 0.05, 0.75);                       // the pin lands
+glint(b(10), 0.14, 53);                        // glass shimmer as the building is revealed
+T_STEPS.forEach((t, i) => click(t, 0.3, 61 + i)); // each step of the indicator
+lowHit(T_LOGO, 0.75);                          // the logo
+
+// The music fades out over the last half second.
+const fadeFrom = Math.round((DURATION - 0.5) * SR);
+for (let i = fadeFrom; i < N; i++) {
+  const k = (i - fadeFrom) / (Math.round(DURATION * SR) - fadeFrom);
+  const g = 0.5 * (1 + Math.cos(Math.PI * Math.min(1, k)));
+  L[i] *= g; R[i] *= g;
+}
 
 // ---------------------------------------------------------------------------
 function writeWav(file, l, r) {
