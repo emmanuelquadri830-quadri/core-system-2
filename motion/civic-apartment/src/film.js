@@ -2,10 +2,11 @@
 // Caches below hold decoded images and layout only, never animation state.
 import { W, H, FPS, DURATION, mulberry32 } from './lib.js';
 import { scene1 } from './scene1.js';
+import { scene2 } from './scene2.js';
 
-const SCENES = [scene1];
+const SCENES = [scene1, scene2];
 
-const MOTION_BLUR_SAMPLES = 6;
+const MOTION_BLUR_SAMPLES = 10;
 const SHUTTER = 0.5 / FPS; // 180 degree shutter
 const GRAIN = 0.03;        // about 3% of full range
 const GRAIN_CELL = 2;      // 2 px grain
@@ -57,9 +58,28 @@ async function preloadPlate(name, t) {
   }
 }
 
+// Stills (renders, logo) listed by each scene, decoded once at startup.
+const stills = new Map();
+async function loadStills() {
+  const paths = [...new Set(SCENES.flatMap((s) => s.images ?? []))];
+  await Promise.all(paths.map(async (p) => {
+    const blob = await (await fetch(p)).blob();
+    stills.set(p, await createImageBitmap(blob));
+  }));
+}
+
 const env = {
   hasPlate: (name) => Boolean(plates[name]),
-  plateFrame: (name, t) => (plates[name] ? bitmaps.get(platePath(name, plateIndex(name, t))) : null),
+  image: (path) => stills.get(path),
+  // Draws the scene's footage frame cover-fit, if there is footage. Returns
+  // false when the scene should draw its stand-in instead.
+  drawFootage(pctx, name, t) {
+    const img = plates[name] ? bitmaps.get(platePath(name, plateIndex(name, t))) : null;
+    if (!img) return false;
+    const s = Math.max(W / img.width, H / img.height);
+    pctx.drawImage(img, (W - img.width * s) / 2, (H - img.height * s) / 2, img.width * s, img.height * s);
+    return true;
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -82,8 +102,11 @@ function paintSample(scene, t) {
   wctx.restore();
 }
 
-function needsBlur(scene, t) {
-  return (scene.blurWindows?.(wctx) ?? []).some(([a, b]) => t >= a && t <= b);
+// Number of motion blur samples at t: 1 outside the scene's fast windows.
+// A window may carry its own sample count as a third value.
+function blurSamples(scene, t) {
+  const win = (scene.blurWindows?.(wctx) ?? []).find(([a, b]) => t >= a && t <= b);
+  return win ? win[2] ?? MOTION_BLUR_SAMPLES : 1;
 }
 
 function applyGrain(ctx, frame) {
@@ -111,10 +134,11 @@ async function seek(t) {
   const scene = sceneAt(t);
   await preloadPlate(scene.name, t);
 
-  if (needsBlur(scene, t)) {
+  const samples = blurSamples(scene, t);
+  if (samples > 1) {
     actx.globalCompositeOperation = 'source-over';
-    for (let k = 0; k < MOTION_BLUR_SAMPLES; k++) {
-      const ts = t + (k / (MOTION_BLUR_SAMPLES - 1) - 0.5) * SHUTTER;
+    for (let k = 0; k < samples; k++) {
+      const ts = t + (k / (samples - 1) - 0.5) * SHUTTER;
       paintSample(scene, ts);
       actx.globalAlpha = 1 / (k + 1); // running average of opaque frames
       actx.drawImage(workCanvas, 0, 0);
@@ -137,5 +161,6 @@ window.ready = (async () => {
   await document.fonts.load('400 64px "Red Hat Display"');
   await document.fonts.ready;
   await loadPlates();
+  await loadStills();
   return true;
 })();
