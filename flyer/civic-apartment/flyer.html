@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Civic Apartment flyer</title>
+<style>
+  @font-face { font-family: "Red Hat Display"; font-weight: 400; src: url(assets/red-hat-display-latin-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Red Hat Display"; font-weight: 500; src: url(assets/red-hat-display-latin-500-normal.woff2) format("woff2"); }
+
+  /* A4 trim (210 x 297 mm) with 3 mm bleed on every side. */
+  @page { size: 216mm 303mm; margin: 0; }
+  :root {
+    --ink: #0F0F0F; --blue: #1667D0; --white: #FFFFFF; --paper: #F4F2F0;
+    --muted: rgba(15, 15, 15, 0.62);
+    --bleed: 3mm;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 216mm; height: 303mm; background: var(--paper); }
+  body {
+    font-family: "Red Hat Display"; font-weight: 400; color: var(--ink);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    position: relative; overflow: hidden;
+  }
+  .trim { position: absolute; left: var(--bleed); top: var(--bleed); width: 210mm; height: 297mm; }
+  .abs { position: absolute; }
+
+  /* Headlines: Medium, line height 1.0, -2% tracking. Supporting text: Regular. */
+  h1, h2, .price { font-weight: 500; line-height: 1; letter-spacing: -0.02em; }
+  .eyebrow { font-weight: 500; font-size: 7.5pt; letter-spacing: 0.16em; text-transform: uppercase; color: var(--blue); }
+  .blue { color: var(--blue); }
+
+  /* Red Hat Display has no naira sign: the font's own N with two bars. */
+  .n { position: relative; display: inline-block; line-height: 1; }
+  .n::before, .n::after { content: ""; position: absolute; left: -0.02em; right: -0.02em; height: 0.07em; background: currentColor; }
+  .n::before { top: 0.40em; }
+  .n::after { top: 0.57em; }
+
+  /* The curved frame from the Civic facade: small corners and one big sweep. */
+  .frame { overflow: hidden; border-radius: 2.5mm 2.5mm 30mm 2.5mm; }
+
+  /* Header */
+  .logo { left: 14mm; top: 12mm; width: 44mm; }
+  .collab { right: 14mm; top: 16.5mm; font-size: 8pt; color: var(--muted); text-align: right; line-height: 1.35; }
+  .collab b { font-weight: 500; color: var(--ink); }
+
+  /* Hero */
+  .intro { left: 14mm; top: 40mm; width: 86mm; }
+  .intro h1 { font-size: 38pt; margin-top: 4mm; }
+  .intro p { font-size: 10pt; line-height: 1.5; margin-top: 6mm; width: 80mm; color: rgba(15, 15, 15, 0.8); }
+  .hero { left: 104mm; top: 36mm; width: 92mm; height: 115mm; }
+  .hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tag { position: absolute; left: 4mm; bottom: 4mm; font-size: 6pt; color: var(--white); background: rgba(15, 15, 15, 0.45); padding: 1mm 2mm; border-radius: 1mm; letter-spacing: 0.02em; }
+
+  .cards { left: 14mm; top: 120mm; width: 86mm; display: flex; gap: 4mm; }
+  .card { flex: 1; background: var(--white); padding: 5mm 4.5mm 4.5mm; border-radius: 2mm 2mm 9mm 2mm; box-shadow: 0 1.2mm 4mm rgba(15, 15, 15, 0.07); }
+  .card .unit { font-size: 9pt; }
+  .card .price { font-size: 25pt; margin-top: 3mm; }
+  .card .when { font-size: 6.8pt; color: var(--muted); margin-top: 2.5mm; }
+  .from { left: 14mm; top: 113.5mm; }
+
+  /* Payment plans */
+  .plans { left: 14mm; top: 161mm; width: 182mm; background: var(--white); border-radius: 2.5mm 2.5mm 12mm 2.5mm; padding: 6mm 8mm 5.5mm; }
+  .plans h2 { font-size: 16pt; margin-top: 2.2mm; }
+  .seg { display: flex; margin-top: 5mm; background: var(--paper); border-radius: 10mm; padding: 1.2mm; }
+  .seg div { flex: 1; text-align: center; font-size: 9pt; font-weight: 500; padding: 2.6mm 0; border-radius: 10mm; }
+  .seg .on { background: var(--blue); color: var(--white); }
+  .seg small { display: block; font-size: 6.5pt; font-weight: 400; opacity: 0.7; margin-top: 0.6mm; }
+  .plans .note { font-size: 7pt; color: var(--muted); margin-top: 3mm; }
+
+  /* Location */
+  .loc { left: 14mm; top: 216mm; width: 182mm; display: flex; gap: 7mm; align-items: center; }
+  .aerial { width: 30mm; height: 30mm; flex: none; border-radius: 2mm 2mm 12mm 2mm; }
+  .aerial img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; display: block; }
+  .loc .addr { font-size: 12.5pt; line-height: 1.32; margin-top: 2.5mm; }
+  .loc .addr b { font-weight: 500; }
+  .pin { width: 3.4mm; height: 4.4mm; display: inline-block; vertical-align: -0.6mm; margin-right: 1.6mm; }
+
+  /* Footer band: near-black, entered by the curved frame's sweep. */
+  .foot { left: -3mm; top: 254mm; width: 216mm; height: 49mm; background: var(--ink); border-radius: 16mm 0 0 0; color: var(--white); overflow: hidden; }
+  .foot .flower { position: absolute; left: -8mm; bottom: -22mm; width: 62mm; opacity: 0.05; }
+  .cta { position: absolute; left: 17mm; top: 9mm; }
+  .cta h2 { font-size: 21pt; }
+  .cta .row { display: flex; align-items: center; gap: 5mm; margin-top: 5mm; }
+  .btn { background: var(--blue); color: var(--white); font-weight: 500; font-size: 10pt; padding: 3mm 6mm; border-radius: 1.6mm 1.6mm 5mm 1.6mm; }
+  .url { font-size: 12pt; color: var(--paper); }
+  .qr { position: absolute; right: 17mm; top: 8mm; width: 25mm; text-align: center; }
+  .qr .tile { background: var(--white); border-radius: 2mm; padding: 1mm; }
+  .qr img { width: 100%; display: block; }
+  .qr span { display: block; font-size: 6pt; color: rgba(244, 242, 240, 0.7); margin-top: 1.6mm; }
+  .fine { position: absolute; left: 17mm; bottom: 9mm; font-size: 6.2pt; color: rgba(244, 242, 240, 0.6); }
+</style>
+</head>
+<body>
+<div class="trim">
+  <img class="abs logo" src="assets/logo-colour.png" alt="Land Republic">
+  <div class="abs collab">In collaboration with<br><b>Gidi</b></div>
+
+  <div class="abs intro">
+    <div class="eyebrow">Civic Apartment</div>
+    <h1>Lekki living,<br>from <span class="blue"><span class="n">N</span>65M.</span></h1>
+    <p>1 and 2 bedroom apartments with sweeping curved balconies and frameless glass, by Lekki Gardens Phase 5, Lagos.</p>
+  </div>
+
+  <div class="abs hero frame">
+    <img src="assets/street-view-dusk.webp" alt="Civic Apartment at dusk">
+    <span class="tag">Artist's impression</span>
+  </div>
+
+  <div class="abs from eyebrow">Outright prices</div>
+  <div class="abs cards">
+    <div class="card">
+      <div class="unit">1 Bedroom</div>
+      <div class="price"><span class="n">N</span>65M</div>
+      <div class="when">Outright, 0-3 months</div>
+    </div>
+    <div class="card">
+      <div class="unit">2 Bedroom</div>
+      <div class="price"><span class="n">N</span>85M</div>
+      <div class="when">Outright, 0-3 months</div>
+    </div>
+  </div>
+
+  <div class="abs plans">
+    <div class="eyebrow">Payment plans</div>
+    <h2>Pay outright, or spread it over 6, 9 or 12 months.</h2>
+    <div class="seg">
+      <div>0-3 months<small>Outright</small></div>
+      <div>6 months<small>Instalment</small></div>
+      <div>9 months<small>Instalment</small></div>
+      <div class="on">12 months<small>Instalment</small></div>
+    </div>
+    <div class="note">Outright prices shown. Instalment prices differ.</div>
+  </div>
+
+  <div class="abs loc">
+    <div class="aerial frame"><img src="assets/aerial.webp" alt="Aerial view of Civic Apartment"></div>
+    <div>
+      <div class="eyebrow"><svg class="pin" viewBox="0 0 34 44"><path d="M17 0C7.6 0 0 7.4 0 16.6 0 29 17 44 17 44s17-15 17-27.4C34 7.4 26.4 0 17 0z" fill="#1667D0"/><rect x="11" y="10.5" width="12" height="12" rx="3" fill="#FFFFFF"/></svg>Location</div>
+      <div class="addr">Inside <b>Atlantic Nominee Layout</b>, Abraham Adesanya,<br>by <b>Lekki Gardens Phase 5</b>, Lagos.</div>
+    </div>
+  </div>
+
+  <div class="abs foot">
+    <img class="flower" src="assets/flower-large.png" alt="">
+    <div class="cta">
+      <h2>See it for yourself.</h2>
+      <div class="row">
+        <span class="btn">Book an inspection</span>
+        <span class="url">landrepublic.co</span>
+      </div>
+    </div>
+    <div class="qr">
+      <div class="tile"><img src="assets/qr-landrepublic.png" alt="QR code for landrepublic.co"></div>
+      <span>Scan to visit landrepublic.co</span>
+    </div>
+    <div class="fine">Outright prices shown. Instalment prices differ. Images are artist's impressions. A Land Republic development in collaboration with Gidi.</div>
+  </div>
+</div>
+</body>
+</html>
