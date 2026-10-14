@@ -1,0 +1,8 @@
+sfx.json
+*.wav
+chunk_*.mp4
+chunks.txt
+video_only.mp4
+log_*.txt
+prev_*.png
+node_modules/
