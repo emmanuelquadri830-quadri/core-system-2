@@ -1,0 +1,7 @@
+chunk_*.mp4
+chunks.txt
+log_*.txt
+prev_*.png
+*.wav
+voice/
+musicgen/

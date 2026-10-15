@@ -1,0 +1,564 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Loom Design Walkthrough</title>
+<style>
+  :root { --deep: #e01b66; --ink: #1b1220; --muted: #7a6470; --pink: #fb3179; --bad: #e11d48; --good: #059669; --info: #0d99ff; }
+  html, body { margin: 0; padding: 0; background: #fdf1f5; }
+  body { font-family: Inter, sans-serif; -webkit-font-smoothing: antialiased; color: var(--ink); }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: linear-gradient(135deg, #fff8fb 0%, #fdeef4 55%, #fbe3ec 100%); }
+  .blob { position: absolute; border-radius: 50%; filter: blur(110px); opacity: 0.5; }
+  #blobA { width: 700px; height: 700px; left: -200px; top: 300px; background: #ffc2d6; }
+  #blobB { width: 640px; height: 640px; left: 1250px; top: -260px; background: #ffd9c7; }
+  #blobC { width: 600px; height: 500px; left: 1400px; top: 700px; background: #ffd0e0; opacity: 0.4; }
+  #grain { position: absolute; inset: 0; opacity: 0.05; mix-blend-mode: multiply; background: url(assets/grain.png); }
+
+  #topbar { position: absolute; left: 0; top: 0; width: 1920px; height: 6px; background: rgba(251, 49, 121, 0.12); z-index: 50; }
+  #topfill { position: absolute; left: 0; top: 0; height: 6px; width: 0; background: linear-gradient(90deg, #fb3179, #ff6aa2); }
+  .tick { position: absolute; top: 0; width: 3px; height: 6px; background: #fff; }
+
+  /* ---------- phone, left half ---------- */
+  #leftView { position: absolute; left: 0; top: 0; width: 820px; height: 1080px; overflow: hidden; }
+  #world { position: absolute; left: 0; top: 0; width: 820px; height: 1080px; transform-origin: 0 0; }
+  #phone { position: absolute; left: 110px; top: 70px; width: 934px; height: 1962px; transform-origin: 0 0; }
+  #phoneShadow { position: absolute; left: 40px; top: 80px; width: 854px; height: 1880px; border-radius: 150px; box-shadow: 0 70px 140px rgba(140, 20, 70, 0.26), 0 24px 48px rgba(40, 10, 25, 0.16); }
+  #body { position: absolute; inset: 0; border-radius: 150px; background: linear-gradient(135deg, #4a4a50 0%, #1d1d21 18%, #2a2a2f 48%, #141417 70%, #3c3c42 100%); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.10), inset 0 0 0 5px rgba(0, 0, 0, 0.6); }
+  #bezel { position: absolute; inset: 7px; border-radius: 143px; background: #050506; }
+  .btn { position: absolute; width: 8px; border-radius: 4px; background: linear-gradient(90deg, #1a1a1d, #4b4b52 60%, #2a2a2e); }
+  #screen { position: absolute; left: 27px; top: 27px; width: 880px; height: 1908px; border-radius: 123px; overflow: hidden; background: #fff; isolation: isolate; }
+  #status { position: absolute; left: 0; top: 0; width: 880px; height: 120px; background: #fff; }
+  #time { position: absolute; left: 92px; top: 46px; font-size: 38px; line-height: 40px; font-weight: 600; color: #0b0b0f; letter-spacing: -0.5px; }
+  #island { position: absolute; left: 299px; top: 25px; width: 282px; height: 83px; border-radius: 42px; background: #000; z-index: 40; }
+  #appHost { position: absolute; left: 0; top: 120px; width: 880px; height: 1788px; overflow: hidden; }
+  #oldLayer { position: absolute; left: 0; top: 0; width: 880px; height: 1300px; z-index: 10; opacity: 0; }
+  #oldLayer img { position: absolute; left: 0; top: 0; width: 880px; height: 1300px; }
+  #hl { position: absolute; left: 0; top: 0; width: 880px; height: 1300px; z-index: 20; pointer-events: none; }
+  .ring { position: absolute; border: 6px solid var(--info); border-radius: 26px; box-sizing: border-box; opacity: 0; }
+  .ring.bad { border-color: var(--bad); box-shadow: 0 0 0 8px rgba(225, 29, 72, 0.18); }
+  .ring.good { border-color: var(--good); box-shadow: 0 0 0 8px rgba(5, 150, 105, 0.18); }
+  .ring.info { border-color: var(--info); box-shadow: 0 0 0 8px rgba(13, 153, 255, 0.16); }
+  #tap { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; background: rgba(255, 255, 255, 0.55); border: 4px solid rgba(255, 255, 255, 0.95); box-sizing: border-box; opacity: 0; }
+
+  /* ---------- right panel ---------- */
+  #panel { position: absolute; left: 880px; top: 0; width: 960px; height: 1080px; }
+  #pills { position: absolute; left: 0; top: 74px; height: 54px; width: 960px; }
+  .pill { position: absolute; left: 0; top: 0; height: 54px; padding: 0 26px 0 10px; border-radius: 27px; display: flex; align-items: center; gap: 14px; background: #17111a; color: #fff; font-size: 24px; font-weight: 700; letter-spacing: 1.5px; opacity: 0; white-space: nowrap; }
+  .pill b { display: inline-flex; width: 38px; height: 38px; border-radius: 19px; background: var(--pink); align-items: center; justify-content: center; font-size: 17px; letter-spacing: 0; }
+  #slides { position: absolute; left: 0; top: 168px; width: 960px; height: 690px; }
+  .slide, .sub { position: absolute; inset: 0; opacity: 0; }
+  .rv { opacity: 0; }
+
+  .kicker { position: absolute; left: 0; top: 0; font-size: 26px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--pink); }
+  .kicker.bad { color: var(--bad); } .kicker.good { color: var(--good); }
+  .h1 { position: absolute; left: 0; top: 56px; font-family: 'Inter Display', Inter; font-size: 96px; line-height: 104px; font-weight: 800; letter-spacing: -2.5px; }
+  .h2 { position: absolute; left: 0; top: 56px; font-family: 'Inter Display', Inter; font-size: 72px; line-height: 80px; font-weight: 800; letter-spacing: -1.8px; }
+  .pink { background: linear-gradient(90deg, #fb3179, #ff6aa2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .quote { position: absolute; left: 0; top: 60px; font-family: 'Inter Display', Inter; font-size: 84px; line-height: 96px; font-weight: 800; letter-spacing: -2px; }
+  .card { background: #fff; border-radius: 28px; box-shadow: 0 16px 44px rgba(120, 30, 60, 0.10), 0 2px 6px rgba(120, 30, 60, 0.06); }
+  .note { position: absolute; left: 0; font-size: 30px; line-height: 40px; font-weight: 600; color: var(--muted); }
+
+  .stat { position: absolute; left: 0; top: 330px; display: flex; align-items: center; gap: 24px; }
+  .stat b { font-family: 'Inter Display', Inter; font-size: 110px; line-height: 110px; font-weight: 800; color: var(--pink); letter-spacing: -3px; }
+  .stat span { font-size: 32px; line-height: 42px; font-weight: 600; color: var(--muted); }
+  .flow { position: absolute; left: 0; top: 520px; display: flex; align-items: center; gap: 14px; }
+  .chip { display: inline-flex; align-items: center; height: 64px; padding: 0 26px; border-radius: 32px; background: #fff; font-size: 26px; font-weight: 700; box-shadow: 0 8px 22px rgba(120, 30, 60, 0.10); }
+  .chip.pinkchip { background: var(--pink); color: #fff; }
+  .arr { font-size: 34px; color: #d6a8bb; font-weight: 700; }
+
+  .job { position: absolute; left: 0; width: 880px; height: 170px; display: flex; align-items: center; gap: 30px; padding: 0 36px; box-sizing: border-box; }
+  .logo { width: 104px; height: 104px; border-radius: 28px; display: flex; align-items: center; justify-content: center; font-family: 'Inter Display', Inter; font-size: 54px; font-weight: 800; color: #fff; flex: none; }
+  .logo.v { background: linear-gradient(135deg, #fb3179, #ff7aa8); } .logo.p { background: #17111a; }
+  .jt { font-size: 44px; font-weight: 800; letter-spacing: -1px; display: flex; align-items: center; gap: 16px; }
+  .jd { font-size: 28px; font-weight: 500; color: var(--muted); margin-top: 6px; }
+  .tag { font-size: 20px; font-weight: 800; letter-spacing: 2px; padding: 8px 14px; border-radius: 12px; background: #f1edf0; color: var(--muted); text-transform: uppercase; }
+  .tag.now { background: #ffe1ec; color: var(--deep); }
+  .okline { position: absolute; left: 0; font-size: 30px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 14px; }
+  .okline i { font-style: normal; display: inline-flex; width: 44px; height: 44px; border-radius: 22px; background: var(--good); color: #fff; align-items: center; justify-content: center; font-size: 24px; }
+
+  .cmp { position: absolute; left: 0; width: 900px; display: flex; align-items: center; gap: 22px; }
+  .cell { width: 380px; height: 170px; padding: 26px 32px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
+  .cell small { font-size: 24px; font-weight: 600; color: var(--muted); }
+  .cell b { font-family: 'Inter Display', Inter; font-size: 58px; line-height: 66px; font-weight: 800; letter-spacing: -1.5px; margin-top: 6px; }
+  .neq { width: 76px; height: 76px; border-radius: 38px; background: var(--bad); color: #fff; font-size: 48px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+  .cap { position: absolute; left: 0; font-size: 30px; font-weight: 700; }
+  .cap.bad { color: var(--bad); }
+
+  .eq { position: absolute; left: 0; top: 260px; padding: 34px 46px; font-family: 'Inter Display', Inter; font-size: 64px; font-weight: 800; letter-spacing: -1px; color: var(--ink); }
+  .eq b { font-weight: 800; }
+  .checks { position: absolute; left: 0; top: 470px; display: flex; gap: 16px; }
+  .ok { display: inline-flex; align-items: center; gap: 12px; height: 64px; padding: 0 26px 0 14px; border-radius: 32px; background: #e7f8f1; color: #065f46; font-size: 26px; font-weight: 700; }
+  .ok i { font-style: normal; width: 38px; height: 38px; border-radius: 19px; background: var(--good); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 20px; }
+
+  .secnum { position: absolute; left: 0; top: 120px; font-family: 'Inter Display', Inter; font-size: 200px; line-height: 200px; font-weight: 800; color: var(--pink); letter-spacing: -6px; }
+  .sectitle { position: absolute; left: 0; top: 340px; font-family: 'Inter Display', Inter; font-size: 110px; line-height: 116px; font-weight: 800; letter-spacing: -3px; }
+
+  .bridge { position: absolute; left: 0; top: 120px; width: 900px; display: flex; align-items: center; justify-content: space-between; }
+  .node { width: 290px; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 38px; font-weight: 800; }
+  .link { flex: 1; margin: 0 18px; height: 70px; border-radius: 35px; background: linear-gradient(90deg, #fb3179, #ff6aa2); color: #fff; font-size: 26px; font-weight: 800; display: flex; align-items: center; justify-content: center; letter-spacing: 1px; }
+  .notsticker { position: absolute; left: 0; top: 380px; font-size: 44px; font-weight: 800; color: var(--muted); text-decoration: line-through; text-decoration-color: var(--bad); text-decoration-thickness: 6px; }
+  .stickers { position: absolute; left: 0; top: 460px; display: flex; gap: 14px; }
+  .stickers i { width: 64px; height: 64px; border-radius: 16px; background: #f4d7e2; display: block; }
+  .stickers i:nth-child(2n) { border-radius: 50%; background: #f9e3c9; }
+  .stickers i:nth-child(3n) { background: #e5dcf3; }
+
+  /* layers and details */
+  .layers { position: absolute; left: 0; top: 0; width: 280px; }
+  .layer { position: absolute; left: 0; width: 292px; height: 150px; border-radius: 26px; background: #fff; box-shadow: 0 12px 30px rgba(120, 30, 60, 0.09); padding: 26px 28px; box-sizing: border-box; }
+  .layer small { display: block; font-size: 20px; font-weight: 800; letter-spacing: 2px; color: var(--muted); }
+  .layer b { display: block; font-size: 30px; font-weight: 800; margin-top: 8px; letter-spacing: -0.5px; }
+  .layer.active { background: linear-gradient(135deg, #fb3179, #ff6aa2); }
+  .layer.active small { color: rgba(255,255,255,0.85); } .layer.active b { color: #fff; }
+  .detail { position: absolute; left: 320px; top: 0; width: 640px; height: 690px; }
+
+  .tokgrid { position: absolute; left: 0; top: 0; width: 640px; padding: 22px 30px; box-sizing: border-box; }
+  .tokrow { height: 112px; display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #f6e9ee; }
+  .tokrow:last-child { border-bottom: 0; }
+  .tokrow label { width: 150px; font-size: 26px; font-weight: 800; flex: none; }
+  .sw { width: 56px; height: 56px; border-radius: 16px; display: block; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.05); }
+  .aa { font-family: 'Inter Display', Inter; font-size: 56px; font-weight: 800; }
+  .tmeta { font-size: 24px; font-weight: 600; color: var(--muted); }
+  .sp { height: 34px; border-radius: 6px; background: #ffb3cd; display: block; }
+  .rad { width: 54px; height: 54px; background: #ffd5e3; border: 3px solid var(--pink); box-sizing: border-box; display: block; }
+
+  .swbig { position: absolute; left: 0; width: 640px; height: 200px; display: flex; align-items: center; gap: 30px; padding: 0 32px; box-sizing: border-box; }
+  .chipcolor { width: 130px; height: 130px; border-radius: 30px; flex: none; display: block; }
+  .swbig b, .tc-token b { display: block; font-size: 34px; font-weight: 800; }
+  .swbig code, .tc-token code { display: block; font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 30px; color: var(--ink); margin-top: 6px; font-weight: 600; }
+  .swbig small { display: block; font-size: 24px; color: var(--muted); font-weight: 600; margin-top: 8px; }
+
+  .contrast { position: absolute; left: 0; top: 40px; width: 640px; height: 320px; display: flex; align-items: center; gap: 40px; padding: 0 40px; box-sizing: border-box; }
+  .aa-sample { width: 220px; height: 220px; border-radius: 36px; color: #fff; font-family: 'Inter Display', Inter; font-size: 110px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+  .ratio { font-family: 'Inter Display', Inter; font-size: 110px; font-weight: 800; letter-spacing: -3px; line-height: 110px; }
+  .ratio span { font-size: 60px; color: var(--muted); }
+  .pass { margin-top: 14px; font-size: 30px; font-weight: 800; color: var(--good); }
+  .pass small { display: block; font-size: 22px; font-weight: 600; color: var(--muted); margin-top: 6px; }
+
+  .varset { position: absolute; left: 0; top: 0; width: 640px; }
+  .vs-title { font-size: 28px; font-weight: 800; margin-bottom: 18px; display: flex; align-items: center; gap: 12px; }
+  .vs-title span { font-size: 20px; font-weight: 800; color: #7c3aed; background: #efe7ff; padding: 6px 12px; border-radius: 10px; letter-spacing: 1px; }
+  .vs-row { position: relative; height: 330px; border-radius: 30px; background: linear-gradient(180deg, #fb4a8a, #fb6a9d); border: 3px dashed #a78bfa; display: flex; align-items: center; justify-content: space-around; padding: 0 10px; }
+  .v { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+  .v span { font-size: 24px; font-weight: 800; color: #fff; }
+  .dc { position: relative; width: 120px; height: 120px; border-radius: 50%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 50px; font-weight: 700; color: #fff; }
+  .dc.reg { border: 3px solid rgba(255,255,255,0.6); }
+  .dc.per { background: var(--deep); border: 3px solid #fff; }
+  .dc.today { background: var(--deep); border: 3px solid #fff; }
+  .dc.today i { position: absolute; inset: -16px; border-radius: 50%; border: 5px solid #fff; }
+  .dc.pred { border: 3px dashed #fff; }
+  .dc.small { width: 110px; height: 110px; font-size: 44px; }
+
+  .spec { position: absolute; left: 0; top: 0; width: 640px; height: 560px; }
+  .spec-stage { position: absolute; left: 0; top: 20px; width: 330px; height: 340px; border-radius: 30px; background: linear-gradient(180deg, #fb4a8a, #fb6a9d); }
+  .spec-stage .dc { position: absolute; left: 70px; top: 60px; width: 180px; height: 180px; font-size: 72px; }
+  .dim { position: absolute; background: #0d99ff; }
+  .dimlab { position: absolute; font-size: 24px; font-weight: 800; color: #fff; background: #0d99ff; padding: 6px 12px; border-radius: 8px; }
+  .spec-text { position: absolute; left: 370px; top: 70px; width: 270px; }
+  .spec-text b { display: block; font-family: 'Inter Display', Inter; font-size: 64px; line-height: 68px; font-weight: 800; letter-spacing: -1.5px; white-space: nowrap; }
+  .spec-text b.pts { font-size: 40px; line-height: 48px; color: var(--pink); }
+  .spec-text small { display: block; font-size: 26px; line-height: 34px; font-weight: 600; color: var(--muted); margin-top: 18px; }
+
+  .tc-token { position: absolute; left: 0; top: 0; width: 640px; height: 190px; display: flex; align-items: center; gap: 30px; padding: 0 32px; box-sizing: border-box; }
+  .tc-arrow { position: absolute; left: 0; top: 214px; width: 640px; text-align: center; font-size: 26px; font-weight: 800; color: var(--muted); letter-spacing: 1px; }
+  .tc-uses { position: absolute; left: 0; top: 270px; width: 640px; display: flex; gap: 18px; }
+  .mini { flex: 1; height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+  .mini span { font-size: 22px; font-weight: 700; color: var(--muted); }
+  .mini-row { display: flex; gap: 10px; padding: 16px 18px; border-radius: 18px; background: linear-gradient(180deg, #fb4a8a, #fb6a9d); }
+  .md { width: 44px; height: 44px; border-radius: 50%; background: var(--deep); border: 2px solid #fff; display: block; box-sizing: border-box; }
+
+  .doc { position: absolute; left: 0; top: 0; width: 640px; padding: 30px 34px; box-sizing: border-box; }
+  .doc-h { display: flex; align-items: center; justify-content: space-between; padding-bottom: 18px; border-bottom: 2px solid #f6e9ee; }
+  .doc-h b { font-size: 36px; font-weight: 800; }
+  .doc-h span { font-size: 20px; font-weight: 800; color: var(--good); background: #e7f8f1; padding: 8px 14px; border-radius: 10px; letter-spacing: 1px; }
+  .doc-row { padding: 20px 0; border-bottom: 2px solid #f6e9ee; }
+  .doc-row:last-child { border-bottom: 0; padding-bottom: 4px; }
+  .doc-row label { display: block; font-size: 20px; font-weight: 800; letter-spacing: 2px; color: var(--pink); text-transform: uppercase; }
+  .doc-row p { margin: 8px 0 0; font-size: 26px; line-height: 34px; font-weight: 600; }
+
+  .jobs { position: absolute; left: 0; top: 270px; width: 920px; display: flex; gap: 20px; }
+  .jobc { flex: 1; height: 260px; padding: 34px 30px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }
+  .jobc em { font-style: normal; width: 64px; height: 64px; border-radius: 20px; background: #ffe1ec; color: var(--deep); font-size: 30px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .jobc b { display: block; font-size: 40px; font-weight: 800; letter-spacing: -0.5px; }
+  .jobc span { display: block; font-size: 24px; line-height: 32px; font-weight: 600; color: var(--muted); margin-top: 6px; }
+
+  .specrows { position: absolute; left: 0; top: 64px; width: 920px; display: flex; gap: 18px; }
+  .sr { height: 92px; padding: 0 28px; display: flex; align-items: center; gap: 18px; border-radius: 24px; background: #fff; box-shadow: 0 12px 30px rgba(120, 30, 60, 0.09); }
+  .sr b { font-size: 28px; font-weight: 800; }
+  .sr span { font-size: 26px; font-weight: 700; color: var(--deep); }
+  .curve { position: absolute; left: 0; top: 190px; width: 470px; height: 330px; }
+  .curve small { position: absolute; left: 30px; top: 18px; font-size: 20px; font-weight: 700; color: var(--muted); }
+  .scale { position: absolute; left: 500px; top: 190px; width: 420px; height: 330px; }
+  .scale h5 { margin: 30px 30px 0; font-size: 22px; font-weight: 800; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .sc-track { position: absolute; left: 40px; right: 40px; top: 160px; height: 14px; border-radius: 7px; background: linear-gradient(90deg, #c7f0de, #ffe1ec 50%, #fecaca); }
+  .sc-tick { position: absolute; top: 190px; font-size: 22px; font-weight: 800; color: var(--muted); transform: translateX(-50%); white-space: nowrap; }
+  .sc-lab { position: absolute; top: 228px; font-size: 20px; font-weight: 700; color: var(--muted); white-space: nowrap; transform: translateX(-50%); }
+  .sc-mark { position: absolute; top: 132px; width: 34px; height: 70px; margin-left: -17px; }
+  .sc-mark i { position: absolute; left: 7px; top: 0; width: 20px; height: 20px; border-radius: 10px; background: var(--deep); box-shadow: 0 0 0 6px rgba(224, 27, 102, 0.2); }
+  .sc-mark b { position: absolute; left: -60px; top: -44px; width: 154px; text-align: center; font-size: 26px; font-weight: 800; color: var(--deep); }
+
+  .bigbar { position: absolute; left: 0; top: 200px; width: 920px; height: 220px; padding: 50px 50px; box-sizing: border-box; }
+  .bb-labels { display: flex; justify-content: space-between; font-size: 30px; font-weight: 700; color: #64748b; }
+  .bb-labels .pinkt { color: #b32070; }
+  .bb-track { position: relative; margin-top: 30px; height: 28px; border-radius: 14px; background: #f7dce7; overflow: hidden; }
+  .bb-fill { position: absolute; left: 0; top: 0; height: 28px; border-radius: 14px; background: var(--pink); width: 0; }
+
+  .mt { position: absolute; left: 0; width: 920px; height: 120px; display: flex; align-items: center; gap: 26px; padding: 0 34px; box-sizing: border-box; }
+  .mt code { width: 250px; font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 28px; font-weight: 700; flex: none; }
+  .mtbar { position: relative; flex: 1; height: 18px; }
+  .mtbar .track { position: absolute; left: 0; top: 0; height: 18px; border-radius: 9px; background: #ffe1ec; }
+  .mtbar .dot { position: absolute; top: -8px; width: 34px; height: 34px; margin-left: -17px; border-radius: 17px; background: var(--pink); box-shadow: 0 6px 16px rgba(251, 49, 121, 0.4); }
+  .mt b { width: 130px; text-align: right; font-size: 34px; font-weight: 800; flex: none; }
+
+  .code { position: absolute; left: 0; top: 70px; width: 920px; margin: 0; padding: 40px 46px; box-sizing: border-box; border-radius: 28px; background: #17111a; color: #f6e9ee; font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 30px; line-height: 46px; box-shadow: 0 20px 50px rgba(23, 17, 26, 0.25); }
+  .code .ck { color: #ff8ab6; } .code .cv { color: #9be7c4; }
+  .nope { position: absolute; left: 0; top: 520px; font-size: 40px; font-weight: 800; color: var(--muted); text-decoration: line-through; text-decoration-color: var(--bad); text-decoration-thickness: 5px; }
+
+  .two { position: absolute; left: 0; top: 70px; width: 920px; display: flex; gap: 20px; }
+  .col { flex: 1; padding: 34px 38px; box-sizing: border-box; height: 300px; }
+  .col h4 { margin: 0 0 18px; font-size: 34px; font-weight: 800; }
+  .col h4.good { color: var(--good); } .col h4.bad { color: var(--bad); }
+  .col p { margin: 14px 0; font-size: 30px; font-weight: 700; }
+
+  .toggle { position: absolute; left: 0; top: 70px; width: 920px; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; box-sizing: border-box; font-size: 34px; font-weight: 800; }
+  .sw-toggle { position: relative; width: 120px; height: 66px; border-radius: 33px; background: #e5e0e3; }
+  .sw-toggle i { position: absolute; left: 6px; top: 6px; width: 54px; height: 54px; border-radius: 27px; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,0.2); }
+  .rmrow { position: absolute; left: 0; top: 220px; width: 920px; display: flex; gap: 20px; }
+  .rm { flex: 1; height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
+  .rm span { font-size: 26px; font-weight: 700; color: var(--muted); }
+  .rm-stage { position: relative; width: 200px; height: 190px; border-radius: 26px; background: linear-gradient(180deg, #fb4a8a, #fb6a9d); display: flex; align-items: flex-start; justify-content: center; padding-top: 26px; box-sizing: border-box; }
+  .rm-dot { position: absolute; left: 92px; top: 158px; width: 16px; height: 16px; border-radius: 8px; background: #fff; }
+
+  .sum { position: absolute; left: 0; top: 60px; width: 920px; }
+  .sumrow { height: 200px; margin-bottom: 24px; display: flex; align-items: center; gap: 34px; padding: 0 44px; box-sizing: border-box; }
+  .sumrow b { width: 200px; font-family: 'Inter Display', Inter; font-size: 52px; font-weight: 800; color: var(--pink); flex: none; }
+  .sumrow span { font-size: 36px; line-height: 46px; font-weight: 700; }
+  .cta { position: absolute; left: 0; top: 470px; display: inline-flex; align-items: center; height: 84px; padding: 0 36px; border-radius: 42px; background: #17111a; color: #fff; font-size: 30px; font-weight: 700; }
+
+  /* subtitles */
+  #subs { position: absolute; left: 0; top: 884px; width: 960px; height: 140px; padding: 24px 34px; box-sizing: border-box; border-radius: 28px; background: rgba(255, 255, 255, 0.92); box-shadow: 0 16px 44px rgba(120, 30, 60, 0.12); font-size: 34px; line-height: 46px; font-weight: 600; color: var(--ink); opacity: 0; }
+  #subs .w { opacity: 0.32; }
+  #subs .w.on { opacity: 1; }
+  #subs .w.now { opacity: 1; color: var(--deep); }
+  #fade { position: absolute; inset: 0; background: #fff8fb; opacity: 0; z-index: 60; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="blob" id="blobA"></div><div class="blob" id="blobB"></div><div class="blob" id="blobC"></div>
+  <div id="grain"></div>
+  <div id="topbar"><div id="topfill"></div></div>
+
+  <div id="leftView">
+    <div id="world">
+      <div id="phone">
+        <div id="phoneShadow"></div>
+        <div class="btn" style="left:-6px; top:300px; height:70px"></div>
+        <div class="btn" style="left:-6px; top:430px; height:130px"></div>
+        <div class="btn" style="left:-6px; top:590px; height:130px"></div>
+        <div class="btn" style="right:-6px; top:470px; height:200px"></div>
+        <div id="body"></div>
+        <div id="bezel"></div>
+        <div id="screen">
+          <div id="status">
+            <div id="time">9:41</div>
+            <svg style="position:absolute; left:636px; top:50px" width="200" height="34" viewBox="0 0 200 34">
+              <g fill="#0b0b0f"><rect x="0" y="22" width="7" height="10" rx="2"/><rect x="11" y="16" width="7" height="16" rx="2"/><rect x="22" y="10" width="7" height="22" rx="2"/><rect x="33" y="3" width="7" height="29" rx="2"/></g>
+              <g transform="translate(60,3)" fill="#0b0b0f"><path d="M19 28.5 l-5.2 -5.6 a7.6 7.6 0 0 1 10.4 0 z"/><path d="M5.6 15.6 a19.5 19.5 0 0 1 26.8 0 l-3.3 3.6 a14.6 14.6 0 0 0 -20.2 0 z"/><path d="M-2 7.4 a30.5 30.5 0 0 1 42 0 l-3.3 3.6 a25.6 25.6 0 0 0 -35.4 0 z"/></g>
+              <g transform="translate(118,4)"><rect x="0.5" y="0.5" width="52" height="25" rx="7.5" fill="none" stroke="#0b0b0f" stroke-opacity="0.38" stroke-width="2"/><rect x="4" y="4" width="40" height="18" rx="4.5" fill="#0b0b0f"/><path d="M55 9 v8 a4 4 0 0 0 0 -8 z" fill="#0b0b0f" fill-opacity="0.4"/></g>
+            </svg>
+          </div>
+          <div id="appHost">
+            <div id="oldLayer"><img src="assets/old3x.png"></div>
+            <div id="hl"><div id="tap"></div></div>
+          </div>
+          <div id="island"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel">
+    <div id="pills">
+      <div class="pill" id="pill1"><b>01</b>INTRODUCTION</div>
+      <div class="pill" id="pill2"><b>02</b>DESIGN SYSTEMS</div>
+      <div class="pill" id="pill3"><b>03</b>ANIMATION</div>
+      <div class="pill" id="pill4"><b>04</b>THANK YOU</div>
+    </div>
+
+    <div id="slides">
+      <!-- Part 1 -->
+      <section class="slide" data-from="c1" data-to="c3">
+        <div class="kicker rv" data-at="c1">Senior UI/UX Designer</div>
+        <div class="h1 rv" data-at="c1" data-off="0.2">Product designer,<br><span class="pink">based in Lagos</span></div>
+        <div class="stat rv" data-at="c2"><b>5+</b><span>years designing mobile<br>apps and websites</span></div>
+        <div class="flow">
+          <span class="chip rv" data-at="c2" data-word="research">Research</span>
+          <span class="arr rv" data-at="c2" data-word="research" data-off="0.2">›</span>
+          <span class="chip rv" data-at="c2" data-word="research" data-off="0.35">Flows</span>
+          <span class="arr rv" data-at="c2" data-word="screens" data-off="-0.2">›</span>
+          <span class="chip rv" data-at="c2" data-word="screens">Screens</span>
+          <span class="arr rv" data-at="c2" data-word="developers" data-off="-0.2">›</span>
+          <span class="chip rv" data-at="c2" data-word="developers">Handoff</span>
+          <span class="arr rv" data-at="c2" data-word="build" data-off="-0.2">›</span>
+          <span class="chip pinkchip rv" data-at="c2" data-word="build">Build</span>
+        </div>
+      </section>
+
+      <section class="slide" data-from="c3" data-to="c5">
+        <div class="kicker rv" data-at="c3">Where I design</div>
+        <div class="job card rv" data-at="c3" data-off="0.1" style="top:70px">
+          <div class="logo v">V</div>
+          <div><div class="jt">VivaFemini <span class="tag now">Now</span></div><div class="jd">Women's health app</div></div>
+        </div>
+        <div class="job card rv" data-at="c4" style="top:270px">
+          <div class="logo p">P</div>
+          <div><div class="jt">Punch <span class="tag">Before</span></div><div class="jd">Digital agency, many different clients</div></div>
+        </div>
+        <div class="okline rv" data-at="c4" data-word="explain" style="top:486px"><i>✓</i>Explain and defend every design decision</div>
+      </section>
+
+      <section class="slide" data-from="c5" data-to="c6">
+        <div class="kicker rv" data-at="c5">Why I fit a senior role</div>
+        <div class="quote rv" data-at="c5" data-word="because">I look past the pixels.<br><span class="pink">Can people trust<br>the screen?</span></div>
+      </section>
+
+      <section class="slide" data-from="c6" data-to="c8">
+        <div class="kicker bad rv" data-at="c6">The old home screen</div>
+        <div class="cmp rv" data-at="c6" data-word="cycle day" style="top:70px">
+          <div class="cell card"><small>Cycle day</small><b>21</b></div>
+          <div class="neq">≠</div>
+          <div class="cell card"><small>Menstrual phase</small><b>Day 3 of 5</b></div>
+        </div>
+        <div class="cap bad rv" data-at="c6" data-word="period" style="top:268px">Both cannot be true on the same day.</div>
+        <div class="cmp rv" data-at="c7" style="top:370px">
+          <div class="cell card"><small>Progress bar</small><b>56% full</b></div>
+          <div class="neq">≠</div>
+          <div class="cell card"><small>Label says</small><b>11%</b></div>
+        </div>
+      </section>
+
+      <section class="slide" data-from="c8" data-to="c10">
+        <div class="kicker good rv" data-at="c8">The redesign</div>
+        <div class="h2 rv" data-at="c8" data-off="0.15">Every number tells<br>the same story.</div>
+        <div class="eq card rv" data-at="c9">Day <b>3</b> of <b>28</b> = <span class="pink">11%</span></div>
+        <div class="checks">
+          <span class="ok rv" data-at="c9" data-word="cycle is"><i>✓</i>Cycle day 3</span>
+          <span class="ok rv" data-at="c9" data-word="cycle is" data-off="0.25"><i>✓</i>Day 3 of 5</span>
+          <span class="ok rv" data-at="c9" data-word="bar shows"><i>✓</i>Bar at 11%</span>
+        </div>
+      </section>
+
+      <section class="slide" data-from="c10" data-to="c11">
+        <div class="kicker rv" data-at="c10">My standard</div>
+        <div class="quote rv" data-at="c10" data-off="0.1">Clear, consistent,<br><span class="pink">and easy to trust.</span></div>
+      </section>
+
+      <!-- Part 2 -->
+      <section class="slide" data-from="c11" data-to="c12">
+        <div class="secnum rv" data-at="c11">02</div>
+        <div class="sectitle rv" data-at="c11" data-off="0.15">Design systems</div>
+      </section>
+
+      <section class="slide" data-from="c12" data-to="c13">
+        <div class="kicker rv" data-at="c12">A design system is</div>
+        <div class="bridge">
+          <div class="node card rv" data-at="c12" data-word="designers">Designers</div>
+          <div class="link rv" data-at="c12" data-word="shared">a shared language</div>
+          <div class="node card rv" data-at="c12" data-word="developers">Developers</div>
+        </div>
+        <div class="notsticker rv" data-at="c12" data-word="not a sticker">not a sticker sheet</div>
+        <div class="stickers rv" data-at="c12" data-word="not a sticker"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </section>
+
+      <section class="slide" data-from="c13" data-to="c24">
+        <div class="layers">
+          <div class="layer rv" id="L1" data-at="c13" data-word="three" style="top:0"><small>LAYER 1</small><b>Tokens</b></div>
+          <div class="layer rv" id="L2" data-at="c13" data-word="three" data-off="0.25" style="top:170px"><small>LAYER 2</small><b>Components</b></div>
+          <div class="layer rv" id="L3" data-at="c13" data-word="three" data-off="0.5" style="top:340px"><small>LAYER 3</small><b>Documentation</b></div>
+        </div>
+        <div class="detail">
+          <div class="sub" data-from="c14" data-to="c15">
+            <div class="tokgrid card">
+              <div class="tokrow rv" data-at="c14" data-word="colour"><label>Colour</label><span class="sw" style="background:#fb3179"></span><span class="sw" style="background:var(--deep)"></span><span class="sw" style="background:#b32070"></span><span class="sw" style="background:#0f172a"></span><span class="sw" style="background:#64748b"></span></div>
+              <div class="tokrow rv" data-at="c14" data-word="type"><label>Type</label><span class="aa">Aa</span><span class="tmeta">Inter · 12 to 86 pt</span></div>
+              <div class="tokrow rv" data-at="c14" data-word="spacing"><label>Spacing</label><span class="sp" style="width:8px"></span><span class="sp" style="width:16px"></span><span class="sp" style="width:32px"></span><span class="sp" style="width:40px"></span><span class="tmeta">4 · 8 · 16 · 20</span></div>
+              <div class="tokrow rv" data-at="c14" data-word="radius"><label>Radius</label><span class="rad" style="border-radius:10px"></span><span class="rad" style="border-radius:16px"></span><span class="rad" style="border-radius:24px"></span><span class="rad" style="border-radius:50%"></span><span class="tmeta">14 · 20 · 35 · full</span></div>
+              <div class="tokrow rv" data-at="c14" data-word="motion"><label>Motion</label><span class="tmeta">150 · 250 · 400 ms</span></div>
+            </div>
+          </div>
+          <div class="sub" data-from="c15" data-to="c16">
+            <div class="swbig card rv" data-at="c15" data-word="main pink" style="top:20px"><span class="chipcolor" style="background:#fb3179"></span><div><b>color/primary</b><code>#FB3179</code><small>Cycle badge, progress, highlights</small></div></div>
+            <div class="swbig card rv" data-at="c15" data-word="deeper" style="top:250px"><span class="chipcolor" style="background:var(--deep)"></span><div><b>color/period</b><code class="deephex">#E01B66</code><small>Period days</small></div></div>
+          </div>
+          <div class="sub" data-from="c16" data-to="c17">
+            <div class="contrast card rv" data-at="c16">
+              <div class="aa-sample" style="background:var(--deep)">Aa</div>
+              <div><div class="ratio">4.6<span> : 1</span></div><div class="pass">✓ Passes WCAG AA<small>Body text needs 4.5 : 1</small></div></div>
+            </div>
+          </div>
+          <div class="sub" data-from="c17" data-to="c19">
+            <div class="varset rv" data-at="c17">
+              <div class="vs-title">DayCircle <span>4 VARIANTS</span></div>
+              <div class="vs-row">
+                <div class="v rv" data-at="c18" data-word="regular"><div class="dc reg">5</div><span>Regular</span></div>
+                <div class="v rv" data-at="c18" data-word="filled"><div class="dc per">6</div><span>Period</span></div>
+                <div class="v rv" data-at="c18" data-word="double"><div class="dc today"><i></i>8</div><span>Today</span></div>
+                <div class="v rv" data-at="c18" data-word="dashed"><div class="dc pred">9</div><span>Predicted</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="sub" data-from="c19" data-to="c20">
+            <div class="spec rv" data-at="c19">
+              <div class="spec-stage">
+                <div class="dc per">6</div>
+                <div class="dim" style="left:70px; top:262px; width:180px; height:4px"></div>
+                <div class="dim" style="left:70px; top:254px; width:4px; height:20px"></div>
+                <div class="dim" style="left:246px; top:254px; width:4px; height:20px"></div>
+                <div class="dimlab" style="left:124px; top:280px">44 pt</div>
+                <div class="dim" style="left:272px; top:60px; width:4px; height:180px"></div>
+                <div class="dim" style="left:264px; top:60px; width:20px; height:4px"></div>
+                <div class="dim" style="left:264px; top:236px; width:20px; height:4px"></div>
+                <div class="dimlab" style="left:236px; top:132px; transform: rotate(-90deg); transform-origin: 50% 50%;">44 pt</div>
+              </div>
+              <div class="spec-text"><b>44 × 44</b><b class="pts">points</b><small>The minimum touch target Apple recommends</small></div>
+            </div>
+          </div>
+          <div class="sub" data-from="c20" data-to="c22">
+            <div class="tc-token card rv" data-at="c20"><span class="chipcolor" style="background:var(--deep)"></span><div><b>color/period</b><code class="deephex">#E01B66</code></div></div>
+            <div class="tc-arrow rv" data-at="c20" data-word="updates">USED BY EVERY SCREEN</div>
+            <div class="tc-uses">
+              <div class="mini card rv" data-at="c20" data-word="everything"><div class="mini-row"><i class="md"></i><i class="md"></i><i class="md"></i></div><span>Home</span></div>
+              <div class="mini card rv" data-at="c20" data-word="everything" data-off="0.15"><div class="mini-row"><i class="md"></i><i class="md"></i></div><span>Calendar</span></div>
+              <div class="mini card rv" data-at="c20" data-word="everything" data-off="0.3"><div class="mini-row"><i class="md"></i></div><span>Every other screen</span></div>
+            </div>
+          </div>
+          <div class="sub" data-from="c22" data-to="c24">
+            <div class="doc card rv" data-at="c22">
+              <div class="doc-h"><b>DayCircle</b><span>DOCUMENTED</span></div>
+              <div class="doc-row rv" data-at="c23" data-word="when to use"><label>When to use</label><p>One day in the week strip. Tap to see or log that day.</p></div>
+              <div class="doc-row rv" data-at="c23" data-word="states"><label>States</label><p>Regular · Period · Today · Predicted</p></div>
+              <div class="doc-row rv" data-at="c23" data-word="developers"><label>Build specs</label><p>44 × 44 pt · color/period · fill 250 ms ease-out</p></div>
+              <div class="doc-row rv" data-at="c23" data-word="never drift"><label>One source</label><p>The same names in Figma and in code</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Part 3 -->
+      <section class="slide" data-from="c24" data-to="c25">
+        <div class="secnum rv" data-at="c24">03</div>
+        <div class="sectitle rv" data-at="c24" data-off="0.15">Animation</div>
+      </section>
+
+      <section class="slide" data-from="c25" data-to="c27">
+        <div class="h2 rv" data-at="c25" style="top:0">Motion explains.<br><span class="pink">It does not decorate.</span></div>
+        <div class="jobs">
+          <div class="jobc card rv" data-at="c26" data-word="confirm"><em>1</em><div><b>Confirm</b><span>an action</span></div></div>
+          <div class="jobc card rv" data-at="c26" data-word="show where"><em>2</em><div><b>Orient</b><span>show where it came from</span></div></div>
+          <div class="jobc card rv" data-at="c26" data-word="connect"><em>3</em><div><b>Connect</b><span>one state to the next</span></div></div>
+        </div>
+      </section>
+
+      <section class="slide" data-from="c27" data-to="c29">
+        <div class="kicker rv" data-at="c27">Logging a period day</div>
+        <div class="specrows">
+          <div class="sr rv" data-at="c27" data-word="fills"><b>Fill</b><span>250 ms · ease-out</span></div>
+          <div class="sr rv" data-at="c27" data-word="dot"><b>Dot</b><span>80 ms later · drops in</span></div>
+        </div>
+        <div class="curve card rv" data-at="c27" data-word="ease-out">
+          <svg width="470" height="330" viewBox="0 0 470 330">
+            <line x1="60" y1="260" x2="430" y2="260" stroke="#ead8df" stroke-width="3"/>
+            <line x1="60" y1="260" x2="60" y2="40" stroke="#ead8df" stroke-width="3"/>
+            <text x="245" y="296" font-family="Inter" font-size="20" font-weight="700" fill="#7a6470" text-anchor="middle">time</text>
+            <text x="34" y="150" font-family="Inter" font-size="20" font-weight="700" fill="#7a6470" text-anchor="middle" transform="rotate(-90 34 150)">progress</text>
+            <path id="easePath" d="" fill="none" stroke="#fb3179" stroke-width="6" stroke-linecap="round"/>
+            <circle id="easeDot" cx="60" cy="260" r="13" fill="#e01b66" stroke="#fff" stroke-width="4"/>
+          </svg>
+          <small>ease-out, shown 4 times slower</small>
+        </div>
+        <div class="scale card rv" data-at="c28">
+          <h5>How it feels</h5>
+          <div class="sc-track"></div>
+          <div class="sc-tick" style="left:70px">100 ms</div>
+          <div class="sc-tick" style="left:210px">250 ms</div>
+          <div class="sc-tick" style="left:350px">500 ms</div>
+          <div class="sc-lab" style="left:70px">instant</div>
+          <div class="sc-lab" style="left:350px">slow</div>
+          <div class="sc-mark" id="scMark" style="left:70px"><b>250 ms</b><i></i></div>
+        </div>
+      </section>
+
+      <section class="slide" data-from="c29" data-to="c30">
+        <div class="kicker rv" data-at="c29">Opening the home screen</div>
+        <div class="specrows">
+          <div class="sr rv" data-at="c29" data-word="grows"><b>Progress</b><span>0 to 11% · 400 ms · ease-out</span></div>
+        </div>
+        <div class="bigbar card rv" data-at="c29" data-word="grows">
+          <div class="bb-labels"><span>Avg. cycle: 28 days</span><span class="pinkt">11% complete</span></div>
+          <div class="bb-track"><div class="bb-fill" id="bbFill"></div></div>
+        </div>
+        <div class="note rv" data-at="c29" data-word="eye lands" style="top:460px">The eye lands on how far into the cycle you are.</div>
+      </section>
+
+      <section class="slide" data-from="c30" data-to="c31">
+        <div class="kicker rv" data-at="c30">Motion tokens</div>
+        <div class="mt card rv" data-at="c30" data-word="fast" style="top:70px"><code>motion/fast</code><div class="mtbar"><div class="track" style="width:30%"></div><div class="dot" id="mt0"></div></div><b>150 ms</b></div>
+        <div class="mt card rv" data-at="c30" data-word="normal" style="top:210px"><code>motion/normal</code><div class="mtbar"><div class="track" style="width:50%"></div><div class="dot" id="mt1"></div></div><b>250 ms</b></div>
+        <div class="mt card rv" data-at="c30" data-word="slow" style="top:350px"><code>motion/slow</code><div class="mtbar"><div class="track" style="width:80%"></div><div class="dot" id="mt2"></div></div><b>400 ms</b></div>
+        <div class="note rv" data-at="c30" data-word="easing" style="top:510px">Easing: ease-out, cubic-bezier(0.22, 1, 0.36, 1)</div>
+      </section>
+
+      <section class="slide" data-from="c31" data-to="c32">
+        <div class="kicker rv" data-at="c31">What developers get</div>
+        <pre class="code rv" data-at="c31"><span class="ck">--motion-normal</span>: <span class="cv">250ms</span>;
+<span class="ck">--ease-out</span>: <span class="cv">cubic-bezier(0.22, 1, 0.36, 1)</span>;
+
+.day-circle {
+  transition: background-color
+    var(<span class="ck">--motion-normal</span>) var(<span class="ck">--ease-out</span>);
+}</pre>
+        <div class="nope rv" data-at="c31" data-word="make it">"make it smooth"</div>
+      </section>
+
+      <section class="slide" data-from="c32" data-to="c33">
+        <div class="kicker rv" data-at="c32">Smooth on any phone</div>
+        <div class="two">
+          <div class="col card rv" data-at="c32" data-word="opacity"><h4 class="good">Animate</h4><p>✓ Opacity</p><p>✓ Position</p></div>
+          <div class="col card rv" data-at="c32" data-word="smooth"><h4 class="bad">Avoid</h4><p>✗ Width and height</p><p>✗ Layout changes</p></div>
+        </div>
+        <div class="note rv" data-at="c32" data-word="android" style="top:410px">Stays smooth on lower-end Android phones.</div>
+      </section>
+
+      <section class="slide" data-from="c33" data-to="c34">
+        <div class="kicker rv" data-at="c33">Respecting Reduce Motion</div>
+        <div class="toggle card rv" data-at="c33"><span>Reduce Motion</span><div class="sw-toggle" id="rmToggle"><i id="rmKnob"></i></div></div>
+        <div class="rmrow">
+          <div class="rm card rv" data-at="c33" data-word="movement"><div class="rm-stage"><div class="dc per small">6</div><i class="rm-dot" id="rmDrop"></i></div><span>Default: the dot drops in</span></div>
+          <div class="rm card rv" data-at="c33" data-word="movement" data-off="0.5"><div class="rm-stage"><div class="dc per small">6</div><i class="rm-dot" id="rmFade"></i></div><span>Reduce Motion: a simple fade</span></div>
+        </div>
+      </section>
+
+      <!-- Close -->
+      <section class="slide" data-from="c34" data-to="c35">
+        <div class="sum">
+          <div class="sumrow card rv" data-at="c34" data-word="system"><b>System</b><span>keeps every screen consistent</span></div>
+          <div class="sumrow card rv" data-at="c34" data-word="motion"><b>Motion</b><span>helps people understand what just happened</span></div>
+        </div>
+      </section>
+
+      <section class="slide" data-from="c35" data-to="end">
+        <div class="h1 rv" data-at="c35">Thank you<br><span class="pink">for watching.</span></div>
+        <div class="note rv" data-at="c36" style="top:300px">Startup pace, without letting quality slip.</div>
+        <div class="cta rv" data-at="c37">Senior UI/UX Designer · I would love to talk</div>
+      </section>
+    </div>
+
+    <div id="subs"></div>
+  </div>
+  <div id="fade"></div>
+</div>
+<script src="app.js"></script>
+<script src="cues.js"></script>
+<script src="scene.js"></script>
+</body>
+</html>

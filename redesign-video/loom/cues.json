@@ -1,0 +1,298 @@
+[
+ {
+  "id": "c1",
+  "text": "Hi, I am a product designer based in Lagos.",
+  "say": "Hi, I am a product designer based in Lagos.",
+  "start": 1,
+  "end": 4.423,
+  "slotEnd": 4.783
+ },
+ {
+  "id": "c2",
+  "text": "For more than 5 years I have designed mobile apps and websites, from early research to the screens developers build.",
+  "say": "For more than five years I have designed mobile apps and websites, from early research to the screens developers build.",
+  "start": 4.783,
+  "end": 12.206,
+  "slotEnd": 12.606
+ },
+ {
+  "id": "c3",
+  "text": "Today I design for VivaFemini, a women's health app.",
+  "say": "Today I design for Viva Femini, a women's health app.",
+  "start": 12.606,
+  "end": 16.392,
+  "slotEnd": 16.752
+ },
+ {
+  "id": "c4",
+  "text": "Before that I was at Punch, a digital agency, where I designed for many different clients and learned to explain and defend every decision I made.",
+  "say": "Before that I was at Punch, a digital agency, where I designed for many different clients and learned to explain and defend every decision I made.",
+  "start": 16.752,
+  "end": 26.357,
+  "slotEnd": 26.917
+ },
+ {
+  "id": "c5",
+  "text": "Why do I fit a senior role? Because I look past the pixels and ask whether people can trust the screen.",
+  "say": "Why do I fit a senior role? Because I look past the pixels and ask whether people can trust the screen.",
+  "start": 26.917,
+  "end": 34.703,
+  "slotEnd": 35.183
+ },
+ {
+  "id": "c6",
+  "text": "On the old VivaFemini home screen, it said cycle day 21, and right under it, day 3 of 5 of the period.",
+  "say": "On the old Viva Femini home screen, it said cycle day twenty one, and right under it, day three of five of the period.",
+  "start": 35.183,
+  "end": 44.06,
+  "slotEnd": 44.54
+ },
+ {
+  "id": "c7",
+  "text": "The progress bar was half full, but the label said 11 percent.",
+  "say": "The progress bar was half full, but the label said eleven percent.",
+  "start": 44.54,
+  "end": 49.054,
+  "slotEnd": 49.614
+ },
+ {
+  "id": "c8",
+  "text": "In my redesign, every number tells the same story.",
+  "say": "In my redesign, every number tells the same story.",
+  "start": 49.614,
+  "end": 53.037,
+  "slotEnd": 53.757
+ },
+ {
+  "id": "c9",
+  "text": "Day 3 of a 28-day cycle is 11 percent, so the bar shows 11 percent.",
+  "say": "Day three of a twenty eight day cycle is eleven percent, so the bar shows eleven percent.",
+  "start": 53.757,
+  "end": 60.089,
+  "slotEnd": 60.569
+ },
+ {
+  "id": "c10",
+  "text": "That is the standard I would bring to your team.",
+  "say": "That is the standard I would bring to your team.",
+  "start": 60.569,
+  "end": 64.355,
+  "slotEnd": 65.395
+ },
+ {
+  "id": "c11",
+  "text": "Now, design systems.",
+  "say": "Now, design systems.",
+  "start": 65.395,
+  "end": 66.636,
+  "slotEnd": 67.356
+ },
+ {
+  "id": "c12",
+  "text": "For me, a design system is a shared language between designers and developers, not a sticker sheet.",
+  "say": "For me, a design system is a shared language between designers and developers, not a sticker sheet.",
+  "start": 67.356,
+  "end": 73.688,
+  "slotEnd": 74.168
+ },
+ {
+  "id": "c13",
+  "text": "I build it in three layers.",
+  "say": "I build it in three layers.",
+  "start": 74.168,
+  "end": 76.5,
+  "slotEnd": 77.14
+ },
+ {
+  "id": "c14",
+  "text": "The first layer is tokens: colour, type, spacing, corner radius and motion.",
+  "say": "The first layer is tokens: color, type, spacing, corner radius and motion.",
+  "start": 77.14,
+  "end": 81.654,
+  "slotEnd": 82.294
+ },
+ {
+  "id": "c15",
+  "text": "Our main pink is FB3179, and the deeper pink, E01B66, marks period days.",
+  "say": "Our main pink is F B 3 1 7 9, and the deeper pink, E 0 1 B 6 6, marks period days.",
+  "start": 82.294,
+  "end": 90.808,
+  "slotEnd": 91.368
+ },
+ {
+  "id": "c16",
+  "text": "White text on that deeper pink has a contrast ratio of about 4.6 to 1, so it passes WCAG AA.",
+  "say": "White text on that deeper pink has a contrast ratio of about four point six to one, so it passes W C A G double A.",
+  "start": 91.368,
+  "end": 100.973,
+  "slotEnd": 101.693
+ },
+ {
+  "id": "c17",
+  "text": "The second layer is components.",
+  "say": "The second layer is components.",
+  "start": 101.693,
+  "end": 103.661,
+  "slotEnd": 103.981
+ },
+ {
+  "id": "c18",
+  "text": "This day circle is one component with four states: a regular day, a period day that is filled, today with a double ring, and predicted period days with a dashed outline.",
+  "say": "This day circle is one component with four states: a regular day, a period day that is filled, today with a double ring, and predicted period days with a dashed outline.",
+  "start": 103.981,
+  "end": 115.404,
+  "slotEnd": 116.124
+ },
+ {
+  "id": "c19",
+  "text": "Each circle is 44 by 44 points, the minimum touch target Apple recommends.",
+  "say": "Each circle is forty four by forty four points, the minimum touch target Apple recommends.",
+  "start": 116.124,
+  "end": 121.729,
+  "slotEnd": 122.369
+ },
+ {
+  "id": "c20",
+  "text": "Because every screen is built from these pieces, one change to a token updates everything that uses it.",
+  "say": "Because every screen is built from these pieces, one change to a token updates everything that uses it.",
+  "start": 122.369,
+  "end": 129.064,
+  "slotEnd": 129.384
+ },
+ {
+  "id": "c21",
+  "text": "Watch the whole week change at once.",
+  "say": "Watch the whole week change at once.",
+  "start": 129.384,
+  "end": 132.079,
+  "slotEnd": 134.479
+ },
+ {
+  "id": "c22",
+  "text": "The third layer is documentation.",
+  "say": "The third layer is documentation.",
+  "start": 134.479,
+  "end": 136.447,
+  "slotEnd": 136.767
+ },
+ {
+  "id": "c23",
+  "text": "Every component has notes on when to use it, its states, and what developers need to build it, so the app and the Figma file never drift apart.",
+  "say": "Every component has notes on when to use it, its states, and what developers need to build it, so the app and the Figma file never drift apart.",
+  "start": 136.767,
+  "end": 147.099,
+  "slotEnd": 148.139
+ },
+ {
+  "id": "c24",
+  "text": "Now, animation.",
+  "say": "Now, animation.",
+  "start": 148.139,
+  "end": 149.016,
+  "slotEnd": 149.736
+ },
+ {
+  "id": "c25",
+  "text": "I use motion to explain, not to decorate.",
+  "say": "I use motion to explain, not to decorate.",
+  "start": 149.736,
+  "end": 152.795,
+  "slotEnd": 153.195
+ },
+ {
+  "id": "c26",
+  "text": "Every animation I design has one of three jobs: confirm an action, show where something came from, or connect one state to the next.",
+  "say": "Every animation I design has one of three jobs: confirm an action, show where something came from, or connect one state to the next.",
+  "start": 153.195,
+  "end": 162.072,
+  "slotEnd": 162.792
+ },
+ {
+  "id": "c27",
+  "text": "When someone logs a period day, the circle fills in 250 milliseconds with an ease-out curve, and the small dot drops in just after.",
+  "say": "When someone logs a period day, the circle fills in two hundred and fifty milliseconds with an ease out curve, and the small dot drops in just after.",
+  "start": 162.792,
+  "end": 173.124,
+  "slotEnd": 174.244
+ },
+ {
+  "id": "c28",
+  "text": "It is quick enough to feel instant and slow enough to notice.",
+  "say": "It is quick enough to feel instant and slow enough to notice.",
+  "start": 174.244,
+  "end": 178.758,
+  "slotEnd": 179.558
+ },
+ {
+  "id": "c29",
+  "text": "When the home screen opens, the progress bar grows from zero to 11 percent in 400 milliseconds, so the eye lands on how far into the cycle the user is.",
+  "say": "When the home screen opens, the progress bar grows from zero to eleven percent in four hundred milliseconds, so the eye lands on how far into the cycle the user is.",
+  "start": 179.558,
+  "end": 190.981,
+  "slotEnd": 192.021
+ },
+ {
+  "id": "c30",
+  "text": "These timings are tokens too: fast is 150 milliseconds, normal is 250 and slow is 400, each with a fixed easing curve.",
+  "say": "These timings are tokens too: fast is one hundred and fifty milliseconds, normal is two hundred and fifty and slow is four hundred, each with a fixed easing curve.",
+  "start": 192.021,
+  "end": 202.716,
+  "slotEnd": 203.356
+ },
+ {
+  "id": "c31",
+  "text": "Developers get exact values, not \"make it smooth\".",
+  "say": "Developers get exact values, not, make it smooth.",
+  "start": 203.356,
+  "end": 206.415,
+  "slotEnd": 206.975
+ },
+ {
+  "id": "c32",
+  "text": "I only animate opacity and position, so the motion stays smooth on lower-end Android phones.",
+  "say": "I only animate opacity and position, so the motion stays smooth on lower-end Android phones.",
+  "start": 206.975,
+  "end": 212.58,
+  "slotEnd": 213.14
+ },
+ {
+  "id": "c33",
+  "text": "And when someone turns on Reduce Motion, the movement becomes a simple fade.",
+  "say": "And when someone turns on Reduce Motion, the movement becomes a simple fade.",
+  "start": 213.14,
+  "end": 218.017,
+  "slotEnd": 220.417
+ },
+ {
+  "id": "c34",
+  "text": "So that is how I work: a system that keeps every screen consistent, and motion that helps people understand what just happened.",
+  "say": "So that is how I work: a system that keeps every screen consistent, and motion that helps people understand what just happened.",
+  "start": 220.417,
+  "end": 228.567,
+  "slotEnd": 229.127
+ },
+ {
+  "id": "c35",
+  "text": "Thank you for watching.",
+  "say": "Thank you for watching.",
+  "start": 229.127,
+  "end": 230.732,
+  "slotEnd": 231.052
+ },
+ {
+  "id": "c36",
+  "text": "VivaFemini is a startup too, so I know how to move fast without letting quality slip.",
+  "say": "Viva Femini is a startup too, so I know how to move fast without letting quality slip.",
+  "start": 231.052,
+  "end": 237.384,
+  "slotEnd": 237.704
+ },
+ {
+  "id": "c37",
+  "text": "I would love to talk about how I can do the same for your team.",
+  "say": "I would love to talk about how I can do the same for your team.",
+  "start": 237.704,
+  "end": 243.309,
+  "slotEnd": 245.509
+ }
+]
